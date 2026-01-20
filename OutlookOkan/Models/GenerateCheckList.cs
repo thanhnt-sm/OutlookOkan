@@ -1,92 +1,210 @@
-﻿using OutlookOkan.Handlers;
-using OutlookOkan.Properties;
-using OutlookOkan.Types;
+﻿// ============================================================================
+// GENERATECHECKLIST - LOGIC CỐT LÕI CỦA OUTLOOKOKAN
+// ============================================================================
+// File: GenerateCheckList.cs
+// Mô tả: Phân tích email trước khi gửi và tạo danh sách các mục cần kiểm tra
+// Kích thước: 2383 dòng (cần refactor trong tương lai)
+// ============================================================================
+
+// --- CÁC THƯ VIỆN SỬ DỤNG ---
+using OutlookOkan.Handlers;    // Xử lý file CSV, kiểm tra Office files
+using OutlookOkan.Properties;  // Resources (strings đa ngôn ngữ)
+using OutlookOkan.Types;       // Các data model (CheckList, Alert, Address,...)
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
-using System.Threading;
-using Outlook = Microsoft.Office.Interop.Outlook;
+using System.Runtime.InteropServices;       // COM Exception handling
+using System.Text.RegularExpressions;       // Regex cho xử lý text
+using System.Threading;                     // Thread.Sleep cho retry logic
+using Outlook = Microsoft.Office.Interop.Outlook;  // COM objects của Outlook
 
 namespace OutlookOkan.Models
 {
-    /// <summary>
-    /// チェックリスト生成。
-    /// </summary>
+    // =========================================================================
+    // LỚP GENERATECHECKLIST - TẠO DANH SÁCH KIỂM TRA TRƯỚC KHI GỬI EMAIL
+    // =========================================================================
+    // 
+    // ĐÂY LÀ LỚP QUAN TRỌNG NHẤT CỦA OUTLOOKOKAN!
+    // 
+    // CHỨC NĂNG CHÍNH:
+    // 1. Phân tích email (recipients, attachments, body, subject)
+    // 2. Kiểm tra các quy tắc (whitelist, keywords, domains)
+    // 3. Tự động thêm CC/BCC nếu cần
+    // 4. Tạo CheckList chứa các cảnh báo và mục cần xác nhận
+    //
+    // LƯU Ý VỀ CODE QUALITY:
+    // - File này có 2383 dòng → nên được refactor thành nhiều class nhỏ hơn
+    // - Có nhiều Thread.Sleep() để xử lý lỗi COM → không tối ưu
+    // - Có nhiều try-catch rỗng → cần thêm logging
+    // =========================================================================
     public sealed class GenerateCheckList
     {
+        // =====================================================================
+        // CÁC BIẾN INSTANCE
+        // =====================================================================
+        
+        /// <summary>
+        /// CheckList kết quả - chứa tất cả thông tin cần hiển thị trong cửa sổ xác nhận
+        /// </summary>
         private CheckList _checkList = new CheckList();
+        
+        /// <summary>
+        /// Danh sách địa chỉ được phép (whitelist)
+        /// Các địa chỉ trong whitelist sẽ được tự động check trong cửa sổ xác nhận
+        /// </summary>
         private readonly List<Whitelist> _whitelist = new List<Whitelist>();
+        
+        /// <summary>
+        /// Bộ đếm để tạo ID duy nhất cho các địa chỉ không lấy được thông tin
+        /// Ví dụ: "FailedToGetInformation_1", "FailedToGetInformation_2", v.v.
+        /// </summary>
         private int _failedToGetInformationOfRecipientsMailAddressCounter;
 
+        /// <summary>
+        /// Cờ đánh dấu item đang xử lý là Meeting Request
+        /// Meeting Request có cấu trúc khác với Mail thông thường
+        /// </summary>
         public bool IsMeetingItem;
+        
+        /// <summary>
+        /// Cờ đánh dấu item đang xử lý là Task Request
+        /// Task Request cần lấy thông tin từ AssociatedTask
+        /// </summary>
         public bool IsTaskRequestItem;
 
+        // =====================================================================
+        // PHƯƠNG THỨC CHÍNH: TẠO CHECKLIST TỪ EMAIL
+        // =====================================================================
+        
         /// <summary>
-        /// メール送信前の確認画面で使用するチェックリストの生成。
+        /// TẠO DANH SÁCH KIỂM TRA TỪ EMAIL (PHƯƠNG THỨC QUAN TRỌNG NHẤT)
+        /// ==============================================================
+        /// Đây là entry point chính của class, được gọi từ ThisAddIn.Application_ItemSend()
+        /// 
+        /// TRÌNH TỰ XỬ LÝ:
+        /// 1. Load tất cả settings từ CSV files
+        /// 2. Lấy thông tin email (subject, body, sender)
+        /// 3. Lấy thông tin attachments
+        /// 4. Kiểm tra quên đính kèm file
+        /// 5. Kiểm tra từ khóa cảnh báo
+        /// 6. Phân tích danh sách recipients (To, Cc, Bcc)
+        /// 7. Tự động thêm CC/BCC nếu cần
+        /// 8. Kiểm tra các quy tắc (domains, contacts, v.v.)
+        /// 9. Trả về CheckList hoàn chỉnh
         /// </summary>
-        /// <param name="item">送信するアイテム</param>
-        /// <param name="generalSetting">一般設定</param>
-        /// <param name="contacts">連絡先(アドレス帳)</param>
-        /// <param name="autoAddMessageSetting">autoAddMessageSetting</param>
+        /// <typeparam name="T">Loại item (MailItem, MeetingItem, TaskRequestItem)</typeparam>
+        /// <param name="item">Item email đang gửi</param>
+        /// <param name="generalSetting">Cài đặt chung của add-in</param>
+        /// <param name="contacts">Folder danh bạ (có thể null nếu không cần)</param>
+        /// <param name="autoAddMessageSetting">Cài đặt tự động thêm text vào body</param>
+        /// <returns>CheckList chứa tất cả thông tin và cảnh báo</returns>
         internal CheckList GenerateCheckListFromMail<T>(T item, GeneralSetting generalSetting, Outlook.MAPIFolder contacts, AutoAddMessage autoAddMessageSetting)
         {
+            // =================================================================
+            // BƯỚC 1: LOAD TẤT CẢ SETTINGS TỪ CSV FILES
+            // =================================================================
+            // Các settings được lưu trong %APPDATA%\Noraneko\OutlookOkan\
+            // Mỗi tính năng có file CSV riêng để dễ import/export
             #region LoadSettings
 
+            // --- WHITELIST: Danh sách địa chỉ/domain được tin tưởng ---
+            // File: Whitelist.csv
+            // Các địa chỉ này sẽ được tự động check trong cửa sổ xác nhận
             _whitelist.AddRange(CsvFileHandler.ReadCsv<Whitelist>(typeof(WhitelistMap), "Whitelist.csv").Where(x => !string.IsNullOrEmpty(x.WhiteName)));
 
+            // --- ALERT KEYWORDS: Từ khóa cảnh báo trong body email ---
+            // File: AlertKeywordAndMessageList.csv
+            // Nếu body chứa từ khóa → hiện cảnh báo với message tùy chỉnh
             var alertKeywordAndMessageList = CsvFileHandler.ReadCsv<AlertKeywordAndMessage>(typeof(AlertKeywordAndMessageMap), "AlertKeywordAndMessageList.csv")
                 .Where(x => !string.IsNullOrEmpty(x.AlertKeyword)).ToList();
 
+            // --- ALERT KEYWORDS FOR SUBJECT: Từ khóa cảnh báo trong subject ---
+            // File: AlertKeywordAndMessageListForSubject.csv
             var alertKeywordAndMessageForSubjectList = CsvFileHandler.ReadCsv<AlertKeywordAndMessageForSubject>(typeof(AlertKeywordAndMessageForSubjectMap), "AlertKeywordAndMessageListForSubject.csv")
                 .Where(x => !string.IsNullOrEmpty(x.AlertKeyword)).ToList();
 
+            // --- AUTO CC/BCC BY KEYWORD: Tự động thêm CC/BCC khi body chứa từ khóa ---
+            // File: AutoCcBccKeywordList.csv
+            // Ví dụ: body chứa "confidential" → tự động CC cho manager@company.com
             var autoCcBccKeywordList = CsvFileHandler.ReadCsv<AutoCcBccKeyword>(typeof(AutoCcBccKeywordMap), "AutoCcBccKeywordList.csv")
                 .Where(x => !string.IsNullOrEmpty(x.AutoAddAddress) && !string.IsNullOrEmpty(x.Keyword)).ToList();
 
+            // --- AUTO CC/BCC WHEN HAS ATTACHMENT: Tự động thêm CC/BCC khi có file đính kèm ---
+            // File: AutoCcBccAttachedFileList.csv
             var autoCcBccAttachedFilesList = CsvFileHandler.ReadCsv<AutoCcBccAttachedFile>(typeof(AutoCcBccAttachedFileMap), "AutoCcBccAttachedFileList.csv")
                 .Where(x => !string.IsNullOrEmpty(x.AutoAddAddress)).ToList();
 
+            // --- AUTO CC/BCC BY RECIPIENT: Tự động thêm CC/BCC khi gửi cho địa chỉ cụ thể ---
+            // File: AutoCcBccRecipientList.csv
+            // Ví dụ: gửi cho client@external.com → tự động BCC cho sales@company.com
             var autoCcBccRecipientList = CsvFileHandler.ReadCsv<AutoCcBccRecipient>(typeof(AutoCcBccRecipientMap), "AutoCcBccRecipientList.csv")
                 .Where(x => !string.IsNullOrEmpty(x.AutoAddAddress) && !string.IsNullOrEmpty(x.TargetRecipient)).ToList();
 
+            // --- ALERT ADDRESS: Địa chỉ cần cảnh báo khi gửi ---
+            // File: AlertAddressList.csv
             var alertAddressList = CsvFileHandler.ReadCsv<AlertAddress>(typeof(AlertAddressMap), "AlertAddressList.csv")
                 .Where(x => !string.IsNullOrEmpty(x.TargetAddress)).ToList();
 
+            // --- NAME AND DOMAINS: Kiểm tra tên công ty và domain khớp nhau ---
+            // File: NameAndDomains.csv
+            // Ví dụ: body có "Apple" nhưng gửi cho @microsoft.com → cảnh báo
             var nameAndDomainsList = CsvFileHandler.ReadCsv<NameAndDomains>(typeof(NameAndDomainsMap), "NameAndDomains.csv")
                 .Where(x => !string.IsNullOrEmpty(x.Domain) && !string.IsNullOrEmpty(x.Name)).ToList();
 
+            // --- KEYWORD AND RECIPIENTS: Từ khóa phải đi kèm recipient cụ thể ---
+            // File: keywordAndRecipientsList.csv
             var keywordAndRecipientsList = CsvFileHandler.ReadCsv<KeywordAndRecipients>(typeof(KeywordAndRecipientsMap), "keywordAndRecipientsList.csv")
                 .Where(x => !string.IsNullOrEmpty(x.Keyword) && !string.IsNullOrEmpty(x.Recipient)).ToList();
 
+            // --- DEFERRED DELIVERY: Thời gian trì hoãn gửi email (phút) ---
+            // File: DeferredDeliveryMinutes.csv
+            // Cho phép user "hối hận" và cancel email trong khoảng thời gian này
             var deferredDeliveryMinutes = CsvFileHandler.ReadCsv<DeferredDeliveryMinutes>(typeof(DeferredDeliveryMinutesMap), "DeferredDeliveryMinutes.csv")
                 .Where(x => !string.IsNullOrEmpty(x.TargetAddress)).ToList();
 
+            // --- INTERNAL DOMAINS: Danh sách domain nội bộ ---
+            // File: InternalDomainList.csv
+            // Các domain này được coi là "an toàn", không hiện cảnh báo external
             var internalDomainList = CsvFileHandler.ReadCsv<InternalDomain>(typeof(InternalDomainMap), "InternalDomainList.csv")
                 .Where(x => !string.IsNullOrEmpty(x.Domain)).ToList();
 
+            // --- EXTERNAL DOMAINS WARNING: Cảnh báo khi gửi cho nhiều domain external ---
+            // File: ExternalDomainsWarningAndAutoChangeToBccSetting.csv
             var externalDomainsWarningAndAutoChangeToBccSetting = new ExternalDomainsWarningAndAutoChangeToBcc();
             var externalDomainsWarningAndAutoChangeToBccSettingList = CsvFileHandler.ReadCsv<ExternalDomainsWarningAndAutoChangeToBcc>(typeof(ExternalDomainsWarningAndAutoChangeToBccMap), "ExternalDomainsWarningAndAutoChangeToBccSetting.csv");
             if (externalDomainsWarningAndAutoChangeToBccSettingList.Count > 0) externalDomainsWarningAndAutoChangeToBccSetting = externalDomainsWarningAndAutoChangeToBccSettingList[0];
 
+            // --- ATTACHMENTS SETTING: Cài đặt liên quan đến file đính kèm ---
+            // File: AttachmentsSetting.csv
             var attachmentsSetting = new AttachmentsSetting();
             var attachmentsSettingList = CsvFileHandler.ReadCsv<AttachmentsSetting>(typeof(AttachmentsSettingMap), "AttachmentsSetting.csv");
             if (attachmentsSettingList.Count > 0) attachmentsSetting = attachmentsSettingList[0];
-            if (string.IsNullOrEmpty(attachmentsSetting.TargetAttachmentFileExtensionOfOpen)) attachmentsSetting.TargetAttachmentFileExtensionOfOpen = ".pdf,.txt,.csv,.rtf,.htm,.html,.doc,.docx,.xls,.xlm,.xlsm,.xlsx,.ppt,.pptx,.bmp,.gif,.jpg,.jpeg,.png,.tif,.pub,.vsd,.vsdx";
+            
+            // Các extension mặc định có thể mở preview
+            if (string.IsNullOrEmpty(attachmentsSetting.TargetAttachmentFileExtensionOfOpen)) 
+                attachmentsSetting.TargetAttachmentFileExtensionOfOpen = ".pdf,.txt,.csv,.rtf,.htm,.html,.doc,.docx,.xls,.xlm,.xlsm,.xlsx,.ppt,.pptx,.bmp,.gif,.jpg,.jpeg,.png,.tif,.pub,.vsd,.vsdx";
 
+            // --- RECIPIENTS AND ATTACHMENTS NAME: Liên kết recipient với tên file ---
+            // File: RecipientsAndAttachmentsName.csv
+            // Ví dụ: gửi file "ABC_Report.pdf" cho @xyz.com mà không phải @abc.com → cảnh báo
             var recipientsAndAttachmentsNameList = CsvFileHandler.ReadCsv<RecipientsAndAttachmentsName>(typeof(RecipientsAndAttachmentsNameMap), "RecipientsAndAttachmentsName.csv")
                 .Where(x => !string.IsNullOrEmpty(x.Recipient) && !string.IsNullOrEmpty(x.AttachmentsName)).ToList();
 
+            // --- ATTACHMENT PROHIBITED RECIPIENTS: Cấm gửi file đính kèm cho recipient ---
+            // File: AttachmentProhibitedRecipients.csv
             var attachmentProhibitedRecipientsList = CsvFileHandler.ReadCsv<AttachmentProhibitedRecipients>(typeof(AttachmentProhibitedRecipientsMap), "AttachmentProhibitedRecipients.csv")
                 .Where(x => !string.IsNullOrEmpty(x.Recipient)).ToList();
 
+            // --- ATTACHMENT ALERT RECIPIENTS: Cảnh báo khi gửi file đính kèm cho recipient ---
+            // File: AttachmentAlertRecipients.csv
             var attachmentAlertRecipientsList = CsvFileHandler.ReadCsv<AttachmentAlertRecipients>(typeof(AttachmentAlertRecipientsMap), "AttachmentAlertRecipients.csv")
                 .Where(x => !string.IsNullOrEmpty(x.Recipient)).ToList();
 
+            // --- FORCE AUTO CHANGE TO BCC: Bắt buộc chuyển recipients sang BCC ---
+            // File: ForceAutoChangeRecipientsToBcc.csv
             var forceAutoChangeRecipientsToBccSetting = new ForceAutoChangeRecipientsToBcc();
             var forceAutoChangeRecipientsToBccSettingList = CsvFileHandler.ReadCsv<ForceAutoChangeRecipientsToBcc>(typeof(ForceAutoChangeRecipientsToBccMap), "ForceAutoChangeRecipientsToBcc.csv");
             if (forceAutoChangeRecipientsToBccSettingList.Count > 0) forceAutoChangeRecipientsToBccSetting = forceAutoChangeRecipientsToBccSettingList[0];
@@ -227,7 +345,7 @@ namespace OutlookOkan.Models
                             }
                             catch (COMException e)
                             {
-                                if (e.ErrorCode == -2147467260)
+                                if (e.ErrorCode == ComErrorCodes.EAbort)
                                 {
                                     //HRESULT:0x80004004 対策
                                     Thread.Sleep(10);
@@ -235,6 +353,7 @@ namespace OutlookOkan.Models
                                 }
                                 else
                                 {
+                                    System.Diagnostics.Debug.WriteLine($"Error getting Sender Exchange User: {e}");
                                     break;
                                 }
                             }
@@ -279,7 +398,7 @@ namespace OutlookOkan.Models
                             }
                             catch (COMException e)
                             {
-                                if (e.ErrorCode == -2147467260)
+                                if (e.ErrorCode == ComErrorCodes.EAbort)
                                 {
                                     //HRESULT:0x80004004 対策
                                     Thread.Sleep(10);
@@ -287,6 +406,7 @@ namespace OutlookOkan.Models
                                 }
                                 else
                                 {
+                                    System.Diagnostics.Debug.WriteLine($"Error getting Exchange User Address: {e}");
                                     break;
                                 }
                             }
@@ -556,91 +676,95 @@ namespace OutlookOkan.Models
                         }
 
                         break;
-                    }
-                    catch (COMException e)
-                    {
-                        if (e.ErrorCode == -2147467260)
-                        {
-                            //HRESULT:0x80004004 対策
-                            Thread.Sleep(10);
-                            errorCount++;
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
-                }
-
-                if (distributionList is null) return null;
-
-                var exchangeDistributionListMembers = new List<NameAndRecipient>();
-
-                if (addressEntries is null || addressEntries.Count == 0)
-                {
-                    exchangeDistributionListMembers.Add(new NameAndRecipient { MailAddress = distributionList.PrimarySmtpAddress ?? Resources.FailedToGetInformation + "_" + _failedToGetInformationOfRecipientsMailAddressCounter, NameAndMailAddress = (distributionList.Name ?? Resources.FailedToGetInformation) + $@" ({distributionList.PrimarySmtpAddress ?? Resources.DistributionList})" });
-
-                    return exchangeDistributionListMembers;
-                }
-
-                var externalRecipientCounter = 1;
-                var tempOutlookApp = new Outlook.Application();
-                foreach (Outlook.AddressEntry member in addressEntries)
-                {
-                    var tempRecipient = tempOutlookApp.Session.CreateRecipient(member.Address);
-                    var mailAddress = Resources.FailedToGetInformation + "_" + _failedToGetInformationOfRecipientsMailAddressCounter;
-
-                    try
-                    {
-                        _ = tempRecipient.Resolve();
-                        var propertyAccessor = tempRecipient.AddressEntry.PropertyAccessor;
-                        Thread.Sleep(20);
-
-                        errorCount = 0;
-                        while (errorCount < 100)
-                        {
-                            try
+                                        catch (COMException e)
                             {
-                                mailAddress = propertyAccessor.GetProperty(@"http://schemas.microsoft.com/mapi/proptag/0x39FE001E").ToString() ?? Resources.FailedToGetInformation + "_" + _failedToGetInformationOfRecipientsMailAddressCounter;
-                                break;
-                            }
-                            catch (COMException e)
-                            {
-                                switch (e.ErrorCode)
+                                if (e.ErrorCode == ComErrorCodes.EAbort)
                                 {
-                                    case -2147467260:
-                                        //HRESULT:0x80004004 対策
-                                        Thread.Sleep(10);
-                                        errorCount++;
-                                        break;
-                                    case -2147467259:
-                                        mailAddress = Resources.ExternalRecipient + "_" + externalRecipientCounter;
-                                        externalRecipientCounter++;
-                                        break;
+                                    //HRESULT:0x80004004 対策
+                                    Thread.Sleep(10);
+                                    errorCount++;
+                                }
+                                else
+                                {
+                                    System.Diagnostics.Debug.WriteLine($"Error getting ExchangeDistributionList: {e}");
+                                    break;
                                 }
                             }
                         }
+
+                        if (distributionList is null) return null;
+
+                        var exchangeDistributionListMembers = new List<NameAndRecipient>();
+
+                        if (addressEntries is null || addressEntries.Count == 0)
+                        {
+                            exchangeDistributionListMembers.Add(new NameAndRecipient { MailAddress = distributionList.PrimarySmtpAddress ?? Resources.FailedToGetInformation + "_" + _failedToGetInformationOfRecipientsMailAddressCounter, NameAndMailAddress = (distributionList.Name ?? Resources.FailedToGetInformation) + $@" ({distributionList.PrimarySmtpAddress ?? Resources.DistributionList})" });
+
+                            return exchangeDistributionListMembers;
+                        }
+
+                        var externalRecipientCounter = 1;
+                        var tempOutlookApp = new Outlook.Application();
+                        foreach (Outlook.AddressEntry member in addressEntries)
+                        {
+                            var tempRecipient = tempOutlookApp.Session.CreateRecipient(member.Address);
+                            var mailAddress = Resources.FailedToGetInformation + "_" + _failedToGetInformationOfRecipientsMailAddressCounter;
+
+                            try
+                            {
+                                _ = tempRecipient.Resolve();
+                                var propertyAccessor = tempRecipient.AddressEntry.PropertyAccessor;
+                                Thread.Sleep(20);
+
+                                errorCount = 0;
+                                while (errorCount < 100)
+                                {
+                                    try
+                                    {
+                                        mailAddress = propertyAccessor.GetProperty(@"http://schemas.microsoft.com/mapi/proptag/0x39FE001E").ToString() ?? Resources.FailedToGetInformation + "_" + _failedToGetInformationOfRecipientsMailAddressCounter;
+                                        break;
+                                    }
+                                    catch (COMException e)
+                                    {
+                                        switch (e.ErrorCode)
+                                        {
+                                            case ComErrorCodes.EAbort:
+                                                //HRESULT:0x80004004 対策
+                                                Thread.Sleep(10);
+                                                errorCount++;
+                                                break;
+                                            case ComErrorCodes.EFail:
+                                                mailAddress = Resources.ExternalRecipient + "_" + externalRecipientCounter;
+                                                externalRecipientCounter++;
+                                                break;
+                                            default:
+                                                System.Diagnostics.Debug.WriteLine($"Error getting PropertyAccessor: {e}");
+                                                break;
+                                        }
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"Error resolving recipient: {ex}");
+                            }
+
+                            // 入れ子になった配布リストは、Exchangeサーバへの負荷が大きく、取得に時間もかかるため展開しない。
+                            exchangeDistributionListMembers.Add(new NameAndRecipient { MailAddress = mailAddress, NameAndMailAddress = (member.Name ?? Resources.FailedToGetInformation) + $@" ({mailAddress})", IncludedGroupAndList = $@" [{distributionList.Name}]" });
+
+                            if (exchangeDistributionListMembersAreWhite)
+                            {
+                                _whitelist.Add(new Whitelist { WhiteName = mailAddress });
+                            }
+                        }
+
+                        return exchangeDistributionListMembers;
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
-                        //Do Nothing.
+                        System.Diagnostics.Debug.WriteLine($"Error in GetExchangeDistributionListMembers: {ex}");
+                        return null;
                     }
-
-                    // 入れ子になった配布リストは、Exchangeサーバへの負荷が大きく、取得に時間もかかるため展開しない。
-                    exchangeDistributionListMembers.Add(new NameAndRecipient { MailAddress = mailAddress, NameAndMailAddress = (member.Name ?? Resources.FailedToGetInformation) + $@" ({mailAddress})", IncludedGroupAndList = $@" [{distributionList.Name}]" });
-
-                    if (exchangeDistributionListMembersAreWhite)
-                    {
-                        _whitelist.Add(new Whitelist { WhiteName = mailAddress });
-                    }
-                }
-
-                return exchangeDistributionListMembers;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
         }
 
         /// <summary>
