@@ -349,8 +349,7 @@ namespace OutlookOkan
             {
                 // Lấy email header từ MAPI property
                 // 0x007D001E = PR_TRANSPORT_MESSAGE_HEADERS (full email headers)
-                var header = selectedMail.PropertyAccessor.GetProperty(
-                    "http://schemas.microsoft.com/mapi/proptag/0x007D001E");
+                var header = selectedMail.PropertyAccessor.GetProperty(Constants.PR_TRANSPORT_MESSAGE_HEADERS);
                 
                 // Phân tích header để lấy kết quả SPF, DKIM, DMARC
                 var analysisResults = MailHeaderHandler.ValidateEmailHeader(header.ToString());
@@ -480,9 +479,10 @@ namespace OutlookOkan
                             {
                                 File.Delete(tempFilePath);
                             }
-                            catch (Exception)
+                            catch (Exception ex)
                             {
-                                //Do Nothing.
+                                // Log temp file cleanup error
+                                System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Failed to delete temp file (EncryptedZip): {ex.Message}");
                             }
                             return;
                         }
@@ -505,9 +505,10 @@ namespace OutlookOkan
                                 {
                                     File.Delete(tempFilePath);
                                 }
-                                catch (Exception)
+                                catch (Exception ex)
                                 {
-                                    //Do Nothing.
+                                    // Log temp file cleanup error
+                                    System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Failed to delete temp file (LinkInZip): {ex.Message}");
                                 }
                                 return;
                             }
@@ -531,9 +532,10 @@ namespace OutlookOkan
                                 {
                                     File.Delete(tempFilePath);
                                 }
-                                catch (Exception)
+                                catch (Exception ex)
                                 {
-                                    //Do Nothing.
+                                    // Log temp file cleanup error
+                                    System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Failed to delete temp file (OneFileInZip): {ex.Message}");
                                 }
                                 return;
                             }
@@ -557,9 +559,10 @@ namespace OutlookOkan
                                 {
                                     File.Delete(tempFilePath);
                                 }
-                                catch (Exception)
+                                catch (Exception ex)
                                 {
-                                    //Do Nothing.
+                                    // Log temp file cleanup error
+                                    System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Failed to delete temp file (MacroInZip): {ex.Message}");
                                 }
                                 return;
                             }
@@ -584,9 +587,10 @@ namespace OutlookOkan
                             {
                                 File.Delete(tempFilePath);
                             }
-                            catch (Exception)
+                            catch (Exception ex)
                             {
-                                //Do Nothing.
+                                // Log temp file cleanup error
+                                System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Failed to delete temp file (MacroFile): {ex.Message}");
                             }
                             return;
                         }
@@ -597,9 +601,10 @@ namespace OutlookOkan
                 {
                     File.Delete(tempFilePath);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    //Do Nothing.
+                    // Log temp file cleanup error
+                    System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Failed to delete temp file (Cleanup): {ex.Message}");
                 }
             }
         }
@@ -706,18 +711,14 @@ namespace OutlookOkan
             // BƯỚC 3: LOAD CÁC CÀI ĐẶT TỰ ĐỘNG
             // -----------------------------------------------------------------
             
+            // Instantiate SettingsService to load all settings centrally
+            var settingsService = new SettingsService();
+
             // Cài đặt tự động thêm text vào body email
-            var autoAddMessageSetting = new AutoAddMessage();
-            var autoAddMessageSettingList = CsvFileHandler.ReadCsv<AutoAddMessage>(
-                typeof(AutoAddMessageMap), "AutoAddMessage.csv");
-            if (autoAddMessageSettingList.Count > 0) 
-                autoAddMessageSetting = autoAddMessageSettingList[0];
+            var autoAddMessageSetting = settingsService.AutoAddMessageSetting;
 
             // Danh sách recipients cần tự động xóa (ví dụ: bcc mặc định)
-            var autoDeleteRecipients = CsvFileHandler.ReadCsv<AutoDeleteRecipient>(
-                typeof(AutoDeleteRecipientMap), "AutoDeleteRecipientList.csv")
-                .Where(x => !string.IsNullOrEmpty(x.Recipient))
-                .ToList();
+            var autoDeleteRecipients = settingsService.AutoDeleteRecipients ?? new List<AutoDeleteRecipient>();
 
             // -----------------------------------------------------------------
             // BƯỚC 4: XỬ LÝ CHÍNH - TẠO CHECKLIST VÀ HIỆN XÁC NHẬN
@@ -791,7 +792,7 @@ namespace OutlookOkan
                         // ★ GỌI GENERATECHECKLIST - LOGIC CỐTLÕI ★
                         // Phân tích email và tạo danh sách cần kiểm tra
                         checklist = generateCheckList.GenerateCheckListFromMail(
-                            mailItem, _generalSetting, contacts, autoAddMessageSetting);
+                            mailItem, _generalSetting, contacts, autoAddMessageSetting, settingsService);
                         
                         // Thêm cảnh báo nếu có recipient bị xóa tự động
                         if (isRemovedOfMailItem)

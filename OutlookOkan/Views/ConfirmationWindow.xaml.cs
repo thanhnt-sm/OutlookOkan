@@ -204,9 +204,10 @@ namespace OutlookOkan.Views
                         };
                         Process.Start(process);
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
-                        //Do Nothing.
+                        // Log error for debugging purposes
+                        Debug.WriteLine($"[OutlookOkan] Failed to open attachment: {ex.Message}");
                     }
                     finally
                     {
@@ -263,9 +264,10 @@ namespace OutlookOkan.Views
             {
                 File.Delete(_tempFilePath);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Do Nothing.
+                // Log error for debugging - temp file cleanup is non-critical
+                Debug.WriteLine($"[OutlookOkan] Failed to delete temp file: {ex.Message}");
             }
         }
     }

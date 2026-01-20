@@ -29,8 +29,10 @@ namespace OutlookOkan.Models
                     return fetchedVersion > GetCurrentVersion();
 
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    // Log version check error (non-critical)
+                    System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Failed to check for new version: {ex.Message}");
                     return false;
                 }
             }

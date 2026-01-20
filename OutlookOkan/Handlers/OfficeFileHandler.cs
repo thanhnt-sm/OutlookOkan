@@ -146,9 +146,10 @@ namespace OutlookOkan.Handlers
                             excelFile = null;
                         }
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
-                        //Do Nothing.
+                        // Log error for debugging purposes
+                        System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Failed to check Excel VBProject: {ex.Message}");
                     }
                     break;
                 case "doc":
@@ -181,9 +182,10 @@ namespace OutlookOkan.Handlers
                             wordFile = null;
                         }
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
-                        //Do Nothing.
+                        // Log error for debugging purposes
+                        System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Failed to check Word VBProject: {ex.Message}");
                     }
                     break;
                 case "ppt":
@@ -209,9 +211,10 @@ namespace OutlookOkan.Handlers
                             pptFile = null;
                         }
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
-                        //Do Nothing.
+                        // Log error for debugging purposes
+                        System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Failed to check PowerPoint VBProject: {ex.Message}");
                     }
                     break;
                 default:

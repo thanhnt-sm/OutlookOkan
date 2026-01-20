@@ -11,6 +11,8 @@ using Outlook = Microsoft.Office.Interop.Outlook;
 
 namespace OutlookOkanTest
 {
+    // WARNING: PrivateObject is deprecated in .NET Core/.NET 5+
+    // For future migration, consider using dependency injection or InternalsVisibleTo
     [TestClass]
     public class UnitTest
     {

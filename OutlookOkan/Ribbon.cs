@@ -83,9 +83,10 @@ namespace OutlookOkan
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                //Do Nothing.
+                // Log header verification error
+                Debug.WriteLine($"[OutlookOkan] Failed to verify email header: {ex.Message}");
             }
         }
 
