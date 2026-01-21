@@ -31,10 +31,16 @@ jobs:
 
     - name: Import Signing Certificate
       run: |
-        # Import the PFX certificate to the Windows certificate store
-        # The temporary key file has no password (empty password)
+        # Import the PFX certificate using PowerShell with proper flags
+        # PersistKeySet ensures the private key is available for MSBuild signing
         $pfxPath = "${{ github.workspace }}\OutlookOkan\OutlookOkan_TemporaryKey.pfx"
-        certutil -user -f -p "" -importpfx "$pfxPath" NoExport
+        $password = ConvertTo-SecureString -String "" -AsPlainText -Force
+        $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($pfxPath, $password, [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::PersistKeySet -bor [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::UserKeySet)
+        $store = New-Object System.Security.Cryptography.X509Certificates.X509Store("My", [System.Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser)
+        $store.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
+        $store.Add($cert)
+        $store.Close()
+        Write-Host "Certificate imported successfully. Thumbprint: $($cert.Thumbprint)"
       shell: pwsh
 
     - name: Build and Publish
