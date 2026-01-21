@@ -375,11 +375,11 @@
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
   </PropertyGroup>
   <PropertyGroup>
-    <SignManifests>false</SignManifests>
+    <SignManifests>true</SignManifests>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestKeyFile></ManifestKeyFile>
-    <ManifestCertificateThumbprint></ManifestCertificateThumbprint>
+    <ManifestKeyFile>OutlookOkan_CI.pfx</ManifestKeyFile>
+    <ManifestCertificateThumbprint>85E31EDD4A62225E14A63506C904E51E0FCDA805</ManifestCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>false</SignAssembly>

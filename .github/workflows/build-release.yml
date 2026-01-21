@@ -29,99 +29,15 @@ jobs:
     - name: Restore NuGet Packages
       run: nuget restore OutlookOkan.sln
 
-    - name: Generate Self-Signed Certificate
-      id: generate-cert
+    - name: Import Signing Certificate
       run: |
-        $ErrorActionPreference = "Stop"
-        Write-Host "Starting Certificate Generation..."
+        $pfxPath = "${{ github.workspace }}\OutlookOkan\OutlookOkan_CI.pfx"
+        $password = ConvertTo-SecureString -String "123456" -AsPlainText -Force
         
-        $pfxPath = "${{ github.workspace }}\OutlookOkan\OutlookOkan_TemporaryKey.pfx"
-        $certThumbprint = ""
+        Write-Host "Importing certificate from $pfxPath..."
+        Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation "Cert:\CurrentUser\My" -Password $password
         
-        # Try using OpenSSL (preferred in CI if available)
-        if (Get-Command openssl -ErrorAction SilentlyContinue) {
-            Write-Host "OpenSSL found. Generating certificate via OpenSSL..."
-            try {
-                # Generate Key and Cert
-                openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes -subj "//CN=OutlookOkan CI"
-                
-                # Export to PFX (empty password)
-                # Note: passout pass: sets empty password
-                openssl pkcs12 -export -out "$pfxPath" -inkey key.pem -in cert.pem -passout pass:
-                
-                # Get Thumbprint for csproj, remove colons
-                $fingerprint = openssl x509 -in cert.pem -noout -fingerprint -sha1
-                $certThumbprint = ($fingerprint -replace "^SHA1 Fingerprint=", "") -replace ":", ""
-                Write-Host "OpenSSL Generated Thumbprint: $certThumbprint"
-            } catch {
-                Write-Warning "OpenSSL failed: $_"
-            }
-        }
-        
-        # Fallback to PowerShell if OpenSSL failed or PFX not created
-        if (-not (Test-Path $pfxPath)) {
-            Write-Host "Using PowerShell New-SelfSignedCertificate fallback..."
-            try {
-                $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=OutlookOkan CI" -KeyAlgorithm RSA -KeyLength 2048 -HashAlgorithm SHA256 -CertStoreLocation "Cert:\CurrentUser\My" -NotAfter (Get-Date).AddYears(1)
-                $certThumbprint = $cert.Thumbprint
-                
-                # Export PFX
-                $password = ConvertTo-SecureString -String "" -AsPlainText -Force
-                Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password $password -Force
-            } catch {
-                Write-Error "Certificate generation failed: $_"
-                exit 1
-            }
-        }
-        
-        if (-not (Test-Path $pfxPath)) { 
-            Write-Error "PFX file was not created."
-            exit 1 
-        }
-        Write-Host "PFX exists at: $pfxPath"
-
-        # Import PFX into Store (Critical for MSBuild finding it)
-        Write-Host "Importing PFX to User Store..."
-        try {
-            $password = ConvertTo-SecureString -String "" -AsPlainText -Force
-            Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation "Cert:\CurrentUser\My" -Password $password
-            Write-Host "Import Successful."
-        } catch {
-             Write-Error "Failed to import PFX: $_"
-             # Continue anyway, maybe MSBuild can use the file directly?
-        }
-
-        # Update csproj
-        $csprojPath = "${{ github.workspace }}\OutlookOkan\OutlookOkan.csproj"
-        $content = Get-Content $csprojPath -Raw
-        
-        # Helper logging
-        Write-Host "Updating csproj with thumbprint: $certThumbprint"
-
-        # Regex replacements to ensure correct configuration
-        # 1. Enable Signing
-        if ($content -match "<SignManifests>.*</SignManifests>") {
-            $content = $content -replace "<SignManifests>.*</SignManifests>", "<SignManifests>true</SignManifests>"
-        } else {
-             $content = $content -replace "</PropertyGroup>", "<SignManifests>true</SignManifests>`n  </PropertyGroup>"
-        }
-
-        # 2. Key File
-        if ($content -match "<ManifestKeyFile>.*</ManifestKeyFile>") {
-            $content = $content -replace "<ManifestKeyFile>.*</ManifestKeyFile>", "<ManifestKeyFile>OutlookOkan_TemporaryKey.pfx</ManifestKeyFile>"
-        } else {
-             $content = $content -replace "<SignManifests>true</SignManifests>", "<SignManifests>true</SignManifests>`n    <ManifestKeyFile>OutlookOkan_TemporaryKey.pfx</ManifestKeyFile>"
-        }
-        
-        # 3. Thumbprint
-        if ($content -match "<ManifestCertificateThumbprint>.*</ManifestCertificateThumbprint>") {
-            $content = $content -replace "<ManifestCertificateThumbprint>.*</ManifestCertificateThumbprint>", "<ManifestCertificateThumbprint>$certThumbprint</ManifestCertificateThumbprint>"
-        } else {
-             $content = $content -replace "<ManifestKeyFile>OutlookOkan_TemporaryKey.pfx</ManifestKeyFile>", "<ManifestKeyFile>OutlookOkan_TemporaryKey.pfx</ManifestKeyFile>`n    <ManifestCertificateThumbprint>$certThumbprint</ManifestCertificateThumbprint>"
-        }
-        
-        Set-Content -Path $csprojPath -Value $content
-        Write-Host "csproj update complete."
+        Write-Host "Certificate imported successfully."
       shell: pwsh
 
     - name: Build and Publish
