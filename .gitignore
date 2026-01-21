@@ -361,3 +361,4 @@ FodyWeavers.xsd
 .DS_Store
 OutlookOkanTest/.DS_Store
 OutlookOkan/.DS_Store
+.env/.key
