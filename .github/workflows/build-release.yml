@@ -32,8 +32,12 @@ jobs:
     - name: Import Signing Certificate
       run: |
         $pfxPath = "${{ github.workspace }}\OutlookOkan\OutlookOkan_CI.pfx"
-        Write-Host "Importing PFX using certutil..."
-        certutil -f -user -p "123456" -importpfx "$pfxPath" NoExport
+        $password = ConvertTo-SecureString -String "123456" -AsPlainText -Force
+        
+        Write-Host "Importing PFX from $pfxPath..."
+        Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation "Cert:\CurrentUser\My" -Password $password
+        
+        Write-Host "Certificate imported successfully."
       shell: pwsh
 
     - name: Build and Publish
