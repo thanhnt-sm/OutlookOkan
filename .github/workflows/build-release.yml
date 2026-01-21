@@ -53,7 +53,17 @@ jobs:
       shell: pwsh
 
     - name: Build and Publish
-      run: msbuild OutlookOkan/OutlookOkan.csproj /t:Publish /p:Configuration=Release /p:Platform=AnyCPU /p:PublishDir=app.publish/
+      run: msbuild OutlookOkan/OutlookOkan.csproj /t:Publish /p:Configuration=Release /p:Platform=AnyCPU /p:PublishDir=app.publish/ /fl /flp:logfile=msbuild.log;verbosity=diag
+
+    - name: Display Build Errors
+      if: failure()
+      run: |
+        if (Test-Path msbuild.log) {
+          Select-String -Path msbuild.log -Pattern "error" -Context 0,5
+        } else {
+          Write-Host "msbuild.log not found"
+        }
+      shell: pwsh
 
     - name: Archive Production Artifacts
       uses: actions/upload-artifact@v4
@@ -61,6 +71,14 @@ jobs:
         name: OutlookOkan-Installer
         path: OutlookOkan/app.publish/**
         retention-days: 5
+
+    - name: Upload Build Log
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: msbuild-log
+        path: msbuild.log
+        retention-days: 1
 
   release:
     name: Create GitHub Release
