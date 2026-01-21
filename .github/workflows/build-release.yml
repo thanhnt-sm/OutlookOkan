@@ -34,10 +34,13 @@ jobs:
         $pfxPath = "${{ github.workspace }}\OutlookOkan\OutlookOkan_CI.pfx"
         $password = ConvertTo-SecureString -String "123456" -AsPlainText -Force
         
-        Write-Host "Importing PFX from $pfxPath..."
+        Write-Host "Importing to CurrentUser\My..."
         Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation "Cert:\CurrentUser\My" -Password $password
         
-        Write-Host "Certificate imported successfully."
+        Write-Host "Importing to LocalMachine\Root (Trusted Root)..."
+        Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation "Cert:\LocalMachine\Root" -Password $password
+        
+        Write-Host "Certificates imported successfully."
       shell: pwsh
 
     - name: Build and Publish
