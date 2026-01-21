@@ -7,19 +7,20 @@
 // ============================================================================
 
 // --- CÁC THƯ VIỆN SỬ DỤNG ---
-using OutlookOkan.Properties;  
-using OutlookOkan.Types;       
+using OutlookOkan.Properties;
+using OutlookOkan.Types;
 using OutlookOkan.Services;    // [NEW]
 using OutlookOkan.Helpers;     // [NEW]
+using OutlookOkan.Handlers;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;       
-using System.Text.RegularExpressions;       
-using System.Threading;                     
+using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
+using System.Threading;
 using Outlook = Microsoft.Office.Interop.Outlook;
 
 namespace OutlookOkan.Models
@@ -46,18 +47,18 @@ namespace OutlookOkan.Models
         // =====================================================================
         // CÁC BIẾN INSTANCE
         // =====================================================================
-        
+
         /// <summary>
         /// CheckList kết quả - chứa tất cả thông tin cần hiển thị trong cửa sổ xác nhận
         /// </summary>
         private CheckList _checkList = new CheckList();
-        
+
         /// <summary>
         /// Danh sách địa chỉ được phép (whitelist)
         /// Các địa chỉ trong whitelist sẽ được tự động check trong cửa sổ xác nhận
         /// </summary>
         private List<Whitelist> _whitelist;
-        
+
         /// <summary>
         /// Bộ đếm để tạo ID duy nhất cho các địa chỉ không lấy được thông tin
         /// Ví dụ: "FailedToGetInformation_1", "FailedToGetInformation_2", v.v.
@@ -69,7 +70,7 @@ namespace OutlookOkan.Models
         /// Meeting Request có cấu trúc khác với Mail thông thường
         /// </summary>
         public bool IsMeetingItem;
-        
+
         /// <summary>
         /// Cờ đánh dấu item đang xử lý là Task Request
         /// Task Request cần lấy thông tin từ AssociatedTask
@@ -79,7 +80,7 @@ namespace OutlookOkan.Models
         // =====================================================================
         // PHƯƠNG THỨC CHÍNH: TẠO CHECKLIST TỪ EMAIL
         // =====================================================================
-        
+
         /// <summary>
         /// TẠO DANH SÁCH KIỂM TRA TỪ EMAIL (PHƯƠNG THỨC QUAN TRỌNG NHẤT)
         /// ==============================================================
@@ -409,8 +410,8 @@ namespace OutlookOkan.Models
                     Thread.Sleep(20);
 
                     // COM Retry Pattern using Helper
-                    mailAddress = ComRetryHelper.Execute(() => 
-                        propertyAccessor.GetProperty(Constants.PR_SMTP_ADDRESS).ToString()) 
+                    mailAddress = ComRetryHelper.Execute(() =>
+                        propertyAccessor.GetProperty(Constants.PR_SMTP_ADDRESS).ToString())
                         ?? mailAddress;
                 }
                 catch (Exception ex)
@@ -431,8 +432,8 @@ namespace OutlookOkan.Models
                     var propertyAccessor = tempRecipient.AddressEntry.PropertyAccessor;
                     Thread.Sleep(20);
 
-                    mailAddress = ComRetryHelper.Execute(() => 
-                        propertyAccessor.GetProperty(Constants.PR_SMTP_ADDRESS).ToString()) 
+                    mailAddress = ComRetryHelper.Execute(() =>
+                        propertyAccessor.GetProperty(Constants.PR_SMTP_ADDRESS).ToString())
                         ?? mailAddress;
                 }
                 catch (Exception ex)
@@ -486,65 +487,65 @@ namespace OutlookOkan.Models
             {
                 var addressEntry = recipient.AddressEntry;
 
-                        ComRetryHelper.Execute(() =>
-                        {
-                            distributionList = addressEntry?.GetExchangeDistributionList();
+                ComRetryHelper.Execute(() =>
+                {
+                    distributionList = addressEntry?.GetExchangeDistributionList();
 
-                            if (enableGetExchangeDistributionListMembers)
-                            {
-                                addressEntries = distributionList?.GetExchangeDistributionListMembers();
-                            }
-                        });
+                    if (enableGetExchangeDistributionListMembers)
+                    {
+                        addressEntries = distributionList?.GetExchangeDistributionListMembers();
+                    }
+                });
 
-                        if (distributionList is null) return null;
+                if (distributionList is null) return null;
 
-                        var exchangeDistributionListMembers = new List<NameAndRecipient>();
+                var exchangeDistributionListMembers = new List<NameAndRecipient>();
 
-                        if (addressEntries is null || addressEntries.Count == 0)
-                        {
-                            exchangeDistributionListMembers.Add(new NameAndRecipient { MailAddress = distributionList.PrimarySmtpAddress ?? Resources.FailedToGetInformation + "_" + _failedToGetInformationOfRecipientsMailAddressCounter, NameAndMailAddress = (distributionList.Name ?? Resources.FailedToGetInformation) + $@" ({distributionList.PrimarySmtpAddress ?? Resources.DistributionList})" });
+                if (addressEntries is null || addressEntries.Count == 0)
+                {
+                    exchangeDistributionListMembers.Add(new NameAndRecipient { MailAddress = distributionList.PrimarySmtpAddress ?? Resources.FailedToGetInformation + "_" + _failedToGetInformationOfRecipientsMailAddressCounter, NameAndMailAddress = (distributionList.Name ?? Resources.FailedToGetInformation) + $@" ({distributionList.PrimarySmtpAddress ?? Resources.DistributionList})" });
 
-                            return exchangeDistributionListMembers;
-                        }
+                    return exchangeDistributionListMembers;
+                }
 
-                        var externalRecipientCounter = 1;
-                        var tempOutlookApp = new Outlook.Application();
-                        foreach (Outlook.AddressEntry member in addressEntries)
-                        {
-                            var tempRecipient = tempOutlookApp.Session.CreateRecipient(member.Address);
-                            var mailAddress = Resources.FailedToGetInformation + "_" + _failedToGetInformationOfRecipientsMailAddressCounter;
+                var externalRecipientCounter = 1;
+                var tempOutlookApp = new Outlook.Application();
+                foreach (Outlook.AddressEntry member in addressEntries)
+                {
+                    var tempRecipient = tempOutlookApp.Session.CreateRecipient(member.Address);
+                    var mailAddress = Resources.FailedToGetInformation + "_" + _failedToGetInformationOfRecipientsMailAddressCounter;
 
-                            try
-                            {
-                                _ = tempRecipient.Resolve();
-                                var propertyAccessor = tempRecipient.AddressEntry.PropertyAccessor;
-                                Thread.Sleep(20);
+                    try
+                    {
+                        _ = tempRecipient.Resolve();
+                        var propertyAccessor = tempRecipient.AddressEntry.PropertyAccessor;
+                        Thread.Sleep(20);
 
-                                mailAddress = ComRetryHelper.Execute(() => 
-                                    propertyAccessor.GetProperty(Constants.PR_SMTP_ADDRESS).ToString()) 
-                                    ?? mailAddress;
-                            }
-                            catch (Exception ex)
-                            {
-                                System.Diagnostics.Debug.WriteLine($"Error resolving recipient: {ex}");
-                            }
-
-                            // 入れ子になった配布リストは、Exchangeサーバへの負荷が大きく、取得に時間もかかるため展開しない。
-                            exchangeDistributionListMembers.Add(new NameAndRecipient { MailAddress = mailAddress, NameAndMailAddress = (member.Name ?? Resources.FailedToGetInformation) + $@" ({mailAddress})", IncludedGroupAndList = $@" [{distributionList.Name}]" });
-
-                            if (exchangeDistributionListMembersAreWhite)
-                            {
-                                _whitelist.Add(new Whitelist { WhiteName = mailAddress });
-                            }
-                        }
-
-                        return exchangeDistributionListMembers;
+                        mailAddress = ComRetryHelper.Execute(() =>
+                            propertyAccessor.GetProperty(Constants.PR_SMTP_ADDRESS).ToString())
+                            ?? mailAddress;
                     }
                     catch (Exception ex)
                     {
-                        System.Diagnostics.Debug.WriteLine($"Error in GetExchangeDistributionListMembers: {ex}");
-                        return null;
+                        System.Diagnostics.Debug.WriteLine($"Error resolving recipient: {ex}");
                     }
+
+                    // 入れ子になった配布リストは、Exchangeサーバへの負荷が大きく、取得に時間もかかるため展開しない。
+                    exchangeDistributionListMembers.Add(new NameAndRecipient { MailAddress = mailAddress, NameAndMailAddress = (member.Name ?? Resources.FailedToGetInformation) + $@" ({mailAddress})", IncludedGroupAndList = $@" [{distributionList.Name}]" });
+
+                    if (exchangeDistributionListMembersAreWhite)
+                    {
+                        _whitelist.Add(new Whitelist { WhiteName = mailAddress });
+                    }
+                }
+
+                return exchangeDistributionListMembers;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error in GetExchangeDistributionListMembers: {ex}");
+                return null;
+            }
         }
 
         /// <summary>

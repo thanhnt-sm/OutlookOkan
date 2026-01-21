@@ -263,6 +263,8 @@
     <Compile Include="Types\AutoDeleteRecipient.cs" />
     <Compile Include="Types\CcOrBcc.cs" />
     <Compile Include="Types\CheckList.cs" />
+    <Compile Include="Types\Constants.cs" />
+    <Compile Include="Types\ComErrorCodes.cs" />
     <Compile Include="Types\DeferredDeliveryMinutes.cs" />
     <Compile Include="Types\DisplayNameAndRecipient.cs" />
     <Compile Include="Types\ExternalDomainsWarningAndAutoChangeToBcc.cs" />
@@ -376,8 +378,8 @@
     <SignManifests>true</SignManifests>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestKeyFile>
-    </ManifestKeyFile>
+    <ManifestKeyFile>OutlookOkan_TemporaryKey.pfx</ManifestKeyFile>
+    <ManifestCertificateThumbprint>5F0D4D33A90F5DF7790F7AC53E693009C66AD99C</ManifestCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>false</SignAssembly>

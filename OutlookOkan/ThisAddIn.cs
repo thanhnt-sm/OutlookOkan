@@ -42,19 +42,19 @@ namespace OutlookOkan
         // =====================================================================
         // CÁC BIẾN LƯU TRỮ CÀI ĐẶT (SETTINGS)
         // =====================================================================
-        
+
         /// <summary>
         /// Cài đặt chung của add-in (ngôn ngữ, bật/tắt tính năng, v.v.)
         /// Được load từ file: %APPDATA%\Noraneko\OutlookOkan\GeneralSetting.csv
         /// </summary>
         private readonly GeneralSetting _generalSetting = new GeneralSetting();
-        
+
         /// <summary>
         /// Cài đặt bảo mật cho email nhận (kiểm tra SPF, DKIM, DMARC, v.v.)
         /// Được load từ file: SecurityForReceivedMail.csv
         /// </summary>
         private readonly SecurityForReceivedMail _securityForReceivedMail = new SecurityForReceivedMail();
-        
+
         /// <summary>
         /// Danh sách từ khóa cảnh báo trong tiêu đề email nhận
         /// Ví dụ: "[긴급]" → hiện cảnh báo khi mở email có tiêu đề chứa từ này
@@ -64,31 +64,31 @@ namespace OutlookOkan
         // =====================================================================
         // CÁC BIẾN COM OBJECTS CỦA OUTLOOK
         // =====================================================================
-        
+
         /// <summary>
         /// Quản lý tất cả các cửa sổ Inspector (cửa sổ soạn/đọc email riêng)
         /// Dùng để bắt sự kiện khi user mở email từ Outbox (đang chờ gửi)
         /// </summary>
         private Outlook.Inspectors _inspectors;
-        
+
         /// <summary>
         /// Cửa sổ Explorer hiện tại (cửa sổ chính của Outlook)
         /// Dùng để bắt sự kiện khi user chọn email khác
         /// </summary>
         private Outlook.Explorer _currentExplorer;
-        
+
         /// <summary>
         /// Email đang được chọn hiện tại
         /// Cần lưu lại để có thể gỡ event handler khi chọn email khác
         /// </summary>
         private Outlook.MailItem _currentMailItem;
-        
+
         /// <summary>
         /// Namespace MAPI - điểm truy cập vào dữ liệu Outlook
         /// Dùng để lấy thông tin các folder mặc định
         /// </summary>
         private Outlook.NameSpace _mapiNamespace;
-        
+
         /// <summary>
         /// Danh sách tên các folder KHÔNG cần kiểm tra bảo mật
         /// (Calendar, Contacts, Drafts, Sent Items, v.v.)
@@ -99,7 +99,7 @@ namespace OutlookOkan
         // =====================================================================
         // TẠO RIBBON (NÚT BẤM TRÊN THANH CÔNG CỤ OUTLOOK)
         // =====================================================================
-        
+
         /// <summary>
         /// TẠO RIBBON EXTENSION
         /// ====================
@@ -115,7 +115,7 @@ namespace OutlookOkan
         // =====================================================================
         // SỰ KIỆN KHỞI ĐỘNG ADD-IN
         // =====================================================================
-        
+
         /// <summary>
         /// KHỞI ĐỘNG ADD-IN (KHI OUTLOOK MỞ)
         /// ==================================
@@ -137,7 +137,7 @@ namespace OutlookOkan
             // Phải load setting sớm để đổi ngôn ngữ Ribbon trước khi hiển thị
             // Nếu load muộn, Ribbon sẽ hiện bằng ngôn ngữ mặc định (Nhật)
             LoadGeneralSetting(isLaunch: true);
-            
+
             // Nếu user đã chọn ngôn ngữ → đổi ngôn ngữ giao diện
             if (!(_generalSetting.LanguageCode is null))
             {
@@ -148,7 +148,7 @@ namespace OutlookOkan
             // BƯỚC 2: LOAD CÀI ĐẶT BẢO MẬT EMAIL NHẬN
             // -----------------------------------------------------------------
             LoadSecurityForReceivedMail();
-            
+
             // Chỉ thiết lập nếu user bật tính năng bảo mật email nhận
             if (_securityForReceivedMail.IsEnableSecurityForReceivedMail)
             {
@@ -156,7 +156,7 @@ namespace OutlookOkan
                 {
                     // Lấy cửa sổ Explorer hiện tại (cửa sổ chính Outlook)
                     _currentExplorer = Application.ActiveExplorer();
-                    
+
                     if (_currentExplorer is null)
                     {
                         // Trường hợp không có Explorer (hiếm khi xảy ra)
@@ -166,14 +166,14 @@ namespace OutlookOkan
                     {
                         // Lấy namespace MAPI để truy cập dữ liệu Outlook
                         _mapiNamespace = Application.GetNamespace("MAPI");
-                        
+
                         if (_mapiNamespace is null)
                         {
                             // Không thể kết nối MAPI (có thể do không có mạng)
                             MessageBox.Show(
-                                Properties.Resources.IsNoInternetCantUseSecurityForReceivedMail, 
-                                Properties.Resources.AppName, 
-                                MessageBoxButton.OK, 
+                                Properties.Resources.IsNoInternetCantUseSecurityForReceivedMail,
+                                Properties.Resources.AppName,
+                                MessageBoxButton.OK,
                                 MessageBoxImage.Warning);
                         }
                         else
@@ -201,7 +201,7 @@ namespace OutlookOkan
 
                             // Load danh sách từ khóa cảnh báo trong tiêu đề email
                             LoadAlertKeywordOfSubjectWhenOpeningMailsData();
-                            
+
                             // Đăng ký event: khi user chọn email khác → kiểm tra bảo mật
                             _currentExplorer.SelectionChange += CurrentExplorer_SelectionChange;
                         }
@@ -218,7 +218,7 @@ namespace OutlookOkan
                             ? Properties.Resources.IsNoInternetCantUseSecurityForReceivedMail  // Không có mạng
                             : Properties.Resources.CantUseSecurityForReceivedMail,             // Lỗi khác
                         Properties.Resources.AppName,
-                        MessageBoxButton.OK, 
+                        MessageBoxButton.OK,
                         MessageBoxImage.Warning);
                 }
             }
@@ -226,10 +226,10 @@ namespace OutlookOkan
             // -----------------------------------------------------------------
             // BƯỚC 3: ĐĂNG KÝ CÁC EVENT QUAN TRỌNG
             // -----------------------------------------------------------------
-            
+
             // Lấy danh sách tất cả Inspector (cửa sổ soạn/đọc email)
             _inspectors = Application.Inspectors;
-            
+
             // Đăng ký event: khi mở cửa sổ Inspector mới
             // → dùng để cảnh báo khi mở email đang chờ gửi từ Outbox
             _inspectors.NewInspector += OpenOutboxItemInspector;
@@ -243,13 +243,13 @@ namespace OutlookOkan
         // =====================================================================
         // SỰ KIỆN KHI USER CHỌN EMAIL KHÁC (BẢO MẬT EMAIL NHẬN)
         // =====================================================================
-        
+
         /// <summary>
         /// Lưu EntryID của email đang chọn để tránh xử lý lại cùng một email
         /// EntryID là mã định danh duy nhất của mỗi email trong Outlook
         /// </summary>
         private string _currentMailItemEntryId = "";
-        
+
         /// <summary>
         /// XỬ LÝ KHI USER CHỌN EMAIL KHÁC
         /// ==============================
@@ -271,7 +271,7 @@ namespace OutlookOkan
             // -----------------------------------------------------------------
             var currentExplorer = Application.ActiveExplorer();
             var currentFolderName = currentExplorer.CurrentFolder.Name;
-            
+
             // Bỏ qua nếu đang ở folder không cần kiểm tra
             // (Calendar, Contacts, Drafts, Sent Items, v.v.)
             if (_excludedFolderNames.Contains(currentFolderName)) return;
@@ -280,14 +280,14 @@ namespace OutlookOkan
             // BƯỚC 2: KIỂM TRA SELECTION HỢP LỆ
             // -----------------------------------------------------------------
             var selection = currentExplorer.Selection;
-            
+
             // Bỏ qua nếu không có selection hoặc chọn nhiều email
             if (selection is null || selection.Count != 1) return;
-            
+
             // Bỏ qua nếu item được chọn không phải là MailItem
             // (có thể là Meeting, Task, Contact, v.v.)
             if (!(selection[1] is Outlook.MailItem selectedMail)) return;
-            
+
             // Bỏ qua nếu user click lại vào cùng email đang chọn
             // (để không hiện cảnh báo nhiều lần)
             if (_currentMailItemEntryId == selectedMail.EntryID) return;
@@ -313,7 +313,7 @@ namespace OutlookOkan
             if (_securityForReceivedMail.IsEnableAlertKeywordOfSubjectWhenOpeningMailsData)
             {
                 var subject = selectedMail.Subject;
-                
+
                 // Tìm từ khóa cảnh báo trong tiêu đề email
                 // Dùng FirstOrDefault để tìm từ khóa đầu tiên match
                 var settings = _alertKeywordOfSubjectWhenOpeningMail
@@ -322,21 +322,21 @@ namespace OutlookOkan
                 if (!(settings is null))
                 {
                     // Tạo thông báo cảnh báo
-                    var message = Properties.Resources.AlertOfReceivedMailSubject 
-                        + Environment.NewLine 
+                    var message = Properties.Resources.AlertOfReceivedMailSubject
+                        + Environment.NewLine
                         + "[" + settings.AlertKeyword + "]";
-                    
+
                     // Nếu có custom message → dùng custom message
                     if (!string.IsNullOrEmpty(settings.Message))
                     {
                         message = settings.Message;
                     }
-                    
+
                     // Hiện cảnh báo cho user
                     MessageBox.Show(
-                        message, 
-                        Properties.Resources.Warning, 
-                        MessageBoxButton.OK, 
+                        message,
+                        Properties.Resources.Warning,
+                        MessageBoxButton.OK,
                         MessageBoxImage.Exclamation);
                 }
             }
@@ -350,17 +350,17 @@ namespace OutlookOkan
                 // Lấy email header từ MAPI property
                 // 0x007D001E = PR_TRANSPORT_MESSAGE_HEADERS (full email headers)
                 var header = selectedMail.PropertyAccessor.GetProperty(Constants.PR_TRANSPORT_MESSAGE_HEADERS);
-                
+
                 // Phân tích header để lấy kết quả SPF, DKIM, DMARC
                 var analysisResults = MailHeaderHandler.ValidateEmailHeader(header.ToString());
-                
+
                 if (!(analysisResults is null))
                 {
                     // Kiểm tra xem có phải mail nội bộ không
                     // Mail nội bộ thường không có SPF/DKIM/DMARC
-                    var isInternalMail = analysisResults["SPF"] == "NONE" 
-                        && analysisResults["DKIM"] == "NONE" 
-                        && analysisResults["DMARC"] == "NONE" 
+                    var isInternalMail = analysisResults["SPF"] == "NONE"
+                        && analysisResults["DKIM"] == "NONE"
+                        && analysisResults["DMARC"] == "NONE"
                         && analysisResults["Internal"] == "TRUE";
 
                     // Chỉ cảnh báo cho email từ bên ngoài
@@ -646,7 +646,7 @@ namespace OutlookOkan
         // =====================================================================
         // ★★★ PHƯƠNG THỨC QUAN TRỌNG NHẤT: XỬ LÝ KHI GỬI EMAIL ★★★
         // =====================================================================
-        
+
         /// <summary>
         /// XỬ LÝ KHI USER GỬI EMAIL (CLICK NÚT SEND)
         /// ==========================================
@@ -682,13 +682,13 @@ namespace OutlookOkan
             // -----------------------------------------------------------------
             // BƯỚC 1: BỎ QUA CÁC LOẠI MESSAGE ĐẶC BIỆT
             // -----------------------------------------------------------------
-            
+
             // Bỏ qua Moderation Reply (Approve/Reject)
             // Nếu chặn những loại này, user không thể duyệt email được
-            if (((dynamic)item).MessageClass == "IPM.Note.Microsoft.Approval.Reply.Approve" 
-                || ((dynamic)item).MessageClass == "IPM.Note.Microsoft.Approval.Reply.Reject") 
+            if (((dynamic)item).MessageClass == "IPM.Note.Microsoft.Approval.Reply.Approve"
+                || ((dynamic)item).MessageClass == "IPM.Note.Microsoft.Approval.Reply.Reject")
                 return;
-            
+
             // Bỏ qua Meeting Response (Accept/Tentative/Decline)
             // Đây là phản hồi tự động khi user accept/decline meeting
             if (((dynamic)item).MessageClass == "IPM.Schedule.Meeting.Resp.Pos"   // Accept
@@ -710,7 +710,7 @@ namespace OutlookOkan
             // -----------------------------------------------------------------
             // BƯỚC 3: LOAD CÁC CÀI ĐẶT TỰ ĐỘNG
             // -----------------------------------------------------------------
-            
+
             // Instantiate SettingsService to load all settings centrally
             var settingsService = new SettingsService();
 
@@ -753,8 +753,8 @@ namespace OutlookOkan
                 // Chỉ lấy danh bạ nếu có bật tính năng liên quan
                 // (để tránh truy cập không cần thiết)
                 Outlook.MAPIFolder contacts = null;
-                if (_generalSetting.IsAutoCheckRegisteredInContacts 
-                    || _generalSetting.IsWarningIfRecipientsIsNotRegistered 
+                if (_generalSetting.IsAutoCheckRegisteredInContacts
+                    || _generalSetting.IsWarningIfRecipientsIsNotRegistered
                     || _generalSetting.IsProhibitsSendingMailIfRecipientsIsNotRegistered)
                 {
                     contacts = Application.ActiveExplorer().Session
@@ -766,7 +766,7 @@ namespace OutlookOkan
                 // ---------------------------------------------------------
                 var generateCheckList = new GenerateCheckList();
                 CheckList checklist;
-                
+
                 switch (item)
                 {
                     // ===== MAIL THÔNG THƯỜNG =====
@@ -774,26 +774,26 @@ namespace OutlookOkan
                         // Xóa recipients theo cài đặt (nếu có)
                         var isRemovedOfMailItem = DeleteRecipients(
                             mailItem.Recipients, autoDeleteRecipients);
-                        
+
                         // Kiểm tra còn recipients không sau khi xóa
                         if (mailItem.Recipients.Count == 0)
                         {
                             _ = MessageBox.Show(
-                                Properties.Resources.ErrorByAutoDeleteReRecipients, 
-                                Properties.Resources.AppName, 
-                                MessageBoxButton.OK, 
+                                Properties.Resources.ErrorByAutoDeleteReRecipients,
+                                Properties.Resources.AppName,
+                                MessageBoxButton.OK,
                                 MessageBoxImage.Warning);
                             cancel = true;
                             return;
                         }
 
                         type = typeof(Outlook.MailItem);
-                        
+
                         // ★ GỌI GENERATECHECKLIST - LOGIC CỐTLÕI ★
                         // Phân tích email và tạo danh sách cần kiểm tra
                         checklist = generateCheckList.GenerateCheckListFromMail(
                             mailItem, _generalSetting, contacts, autoAddMessageSetting, settingsService);
-                        
+
                         // Thêm cảnh báo nếu có recipient bị xóa tự động
                         if (isRemovedOfMailItem)
                         {
@@ -806,20 +806,20 @@ namespace OutlookOkan
                             });
                         }
                         break;
-                        
+
                     // ===== MEETING REQUEST (NẾU CÓ BẬT XÁC NHẬN) =====
-                    case Outlook.MeetingItem meetingItem 
+                    case Outlook.MeetingItem meetingItem
                         when _generalSetting.IsShowConfirmationAtSendMeetingRequest:
-                        
+
                         var isRemovedOfMeetingItem = DeleteRecipients(
                             meetingItem.Recipients, autoDeleteRecipients);
-                        
+
                         if (meetingItem.Recipients.Count == 0)
                         {
                             _ = MessageBox.Show(
-                                Properties.Resources.ErrorByAutoDeleteReRecipients, 
-                                Properties.Resources.AppName, 
-                                MessageBoxButton.OK, 
+                                Properties.Resources.ErrorByAutoDeleteReRecipients,
+                                Properties.Resources.AppName,
+                                MessageBoxButton.OK,
                                 MessageBoxImage.Warning);
                             cancel = true;
                             return;
@@ -827,7 +827,7 @@ namespace OutlookOkan
 
                         type = typeof(Outlook.MeetingItem);
                         checklist = generateCheckList.GenerateCheckListFromMail(
-                            meetingItem, _generalSetting, contacts, autoAddMessageSetting);
+                            meetingItem, _generalSetting, contacts, autoAddMessageSetting, settingsService);
 
                         if (isRemovedOfMeetingItem)
                         {
@@ -840,24 +840,24 @@ namespace OutlookOkan
                             });
                         }
                         break;
-                        
+
                     // ===== MEETING REQUEST (KHÔNG BẬT XÁC NHẬN) =====
                     case Outlook.MeetingItem _:
                         return;  // Cho phép gửi ngay, không xác nhận
-                        
+
                     // ===== TASK REQUEST (NẾU CÓ BẬT XÁC NHẬN) =====
-                    case Outlook.TaskRequestItem taskRequestItem 
+                    case Outlook.TaskRequestItem taskRequestItem
                         when _generalSetting.IsShowConfirmationAtSendTaskRequest:
-                        
+
                         type = typeof(Outlook.TaskRequestItem);
                         checklist = generateCheckList.GenerateCheckListFromMail(
-                            taskRequestItem, _generalSetting, contacts, autoAddMessageSetting);
+                            taskRequestItem, _generalSetting, contacts, autoAddMessageSetting, settingsService);
                         break;
-                        
+
                     // ===== TASK REQUEST (KHÔNG BẬT XÁC NHẬN) =====
                     case Outlook.TaskRequestItem _:
                         return;  // Cho phép gửi ngay
-                        
+
                     // ===== LOẠI KHÁC (Contact, Note, v.v.) =====
                     default:
                         return;  // Cho phép gửi ngay
