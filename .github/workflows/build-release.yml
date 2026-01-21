@@ -32,33 +32,50 @@ jobs:
     - name: Create Signing Certificate
       id: create-cert
       run: |
-        # Create a new self-signed certificate for ClickOnce manifest signing
+        $ErrorActionPreference = "Stop"
+        Write-Host "Generating Self-Signed Certificate..."
+        
+        # Create certificate
         $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=OutlookOkan CI Build" -CertStoreLocation "Cert:\CurrentUser\My" -KeyExportPolicy Exportable -KeySpec Signature -KeyLength 2048 -KeyAlgorithm RSA -HashAlgorithm SHA256 -NotAfter (Get-Date).AddYears(1)
+        if (-not $cert) { throw "Certificate generation failed" }
         Write-Host "Created certificate with thumbprint: $($cert.Thumbprint)"
         
-        # Export to PFX file (no password for simplicity in CI)
+        # Export PFX
         $pfxPath = "${{ github.workspace }}\OutlookOkan\OutlookOkan_TemporaryKey.pfx"
         $emptyPassword = ConvertTo-SecureString -String "" -AsPlainText -Force
         Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password $emptyPassword -Force
+        if (-not (Test-Path $pfxPath)) { throw "PFX export failed" }
+        Write-Host "Exported PFX to $pfxPath"
         
-        # Update the csproj with the new thumbprint
+        # Update csproj
         $csprojPath = "${{ github.workspace }}\OutlookOkan\OutlookOkan.csproj"
         $csprojContent = Get-Content $csprojPath -Raw
-        $csprojContent = $csprojContent -replace '<ManifestCertificateThumbprint>.*</ManifestCertificateThumbprint>', "<ManifestCertificateThumbprint>$($cert.Thumbprint)</ManifestCertificateThumbprint>"
-        Set-Content -Path $csprojPath -Value $csprojContent -NoNewline
-        Write-Host "Updated csproj with new thumbprint"
+        $newContent = $csprojContent -replace '<ManifestCertificateThumbprint>.*</ManifestCertificateThumbprint>', "<ManifestCertificateThumbprint>$($cert.Thumbprint)</ManifestCertificateThumbprint>"
+        Set-Content -Path $csprojPath -Value $newContent -NoNewline
         
-        # Output thumbprint for logging
-        echo "CERT_THUMBPRINT=$($cert.Thumbprint)" >> $env:GITHUB_OUTPUT
+        # Verify update
+        if ($newContent -match $cert.Thumbprint) { Write-Host "Verified: csproj updated with new thumbprint" }
+        else { throw "Failed to update csproj with new thumbprint" }
+      shell: pwsh
+
+    - name: Verify Environment
+      run: |
+        Write-Host "--- CSPROJ CONTENT (Snippet) ---"
+        Get-Content "${{ github.workspace }}\OutlookOkan\OutlookOkan.csproj" | Select-String "ManifestCertificateThumbprint" -Context 2,2
+        Write-Host "--- CERTIFICATE STORE ---"
+        Get-ChildItem "Cert:\CurrentUser\My" | Format-Table Thumbprint, Subject -AutoSize
+        Write-Host "--- PFX FILE ---"
+        ls "${{ github.workspace }}\OutlookOkan\OutlookOkan_TemporaryKey.pfx"
       shell: pwsh
 
     - name: Build and Publish
       run: msbuild OutlookOkan/OutlookOkan.csproj /t:Publish /p:Configuration=Release /p:Platform=AnyCPU /p:PublishDir=app.publish/ /fl /flp:logfile=msbuild.log;verbosity=diag
 
     - name: Display Build Errors
-      if: failure()
+      if: always()
       run: |
         if (Test-Path msbuild.log) {
+          Write-Host "--- MSBUILD EXTRACTED ERRORS ---"
           Select-String -Path msbuild.log -Pattern "error" -Context 0,5
         } else {
           Write-Host "msbuild.log not found"
