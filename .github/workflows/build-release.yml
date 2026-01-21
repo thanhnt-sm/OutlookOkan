@@ -29,19 +29,19 @@ jobs:
     - name: Restore NuGet Packages
       run: nuget restore OutlookOkan.sln
 
-    - name: Build
-      run: msbuild OutlookOkan/OutlookOkan.csproj /t:Build /p:Configuration=Release /p:Platform=AnyCPU /p:SignManifests=false /fl /flp:logfile=msbuild.log;verbosity=detailed
-
-    - name: Display Build Errors
-      if: failure()
+    - name: Import Signing Certificate
       run: |
-        if (Test-Path msbuild.log) {
-          Write-Host "--- MSBUILD ERRORS ---"
-          Select-String -Path msbuild.log -Pattern "error" -Context 0,10
-        } else {
-          Write-Host "msbuild.log not found"
-        }
+        $pfxPath = "${{ github.workspace }}\OutlookOkan\OutlookOkan_CI.pfx"
+        $password = ConvertTo-SecureString -String "123456" -AsPlainText -Force
+        
+        Write-Host "Importing PFX from $pfxPath..."
+        Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation "Cert:\CurrentUser\My" -Password $password
+        
+        Write-Host "Certificate imported successfully."
       shell: pwsh
+
+    - name: Build and Publish
+      run: msbuild OutlookOkan/OutlookOkan.csproj /t:Publish /p:Configuration=Release /p:Platform=AnyCPU /p:PublishDir=app.publish/ /p:ManifestTimestampUrl="" /fl /flp:logfile=msbuild.log;verbosity=detailed
 
     - name: Archive Production Artifacts
       uses: actions/upload-artifact@v4
