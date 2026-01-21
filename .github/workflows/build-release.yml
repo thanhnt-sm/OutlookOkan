@@ -29,14 +29,16 @@ jobs:
     - name: Restore NuGet Packages
       run: nuget restore OutlookOkan.sln
 
-    - name: Build Project
-      run: msbuild OutlookOkan/OutlookOkan.csproj /t:Build /p:Configuration=Release /p:Platform=AnyCPU /p:SignManifests=false /p:GenerateManifests=false
-
-    - name: Prepare Artifacts
+    - name: Import Signing Certificate
       run: |
-        New-Item -ItemType Directory -Force -Path OutlookOkan/app.publish
-        Copy-Item -Path OutlookOkan/bin/Release/* -Destination OutlookOkan/app.publish/ -Recurse
+        # Import the PFX certificate to the Windows certificate store
+        # The temporary key file has no password (empty password)
+        $pfxPath = "${{ github.workspace }}\OutlookOkan\OutlookOkan_TemporaryKey.pfx"
+        certutil -user -f -p "" -importpfx "$pfxPath" NoExport
       shell: pwsh
+
+    - name: Build and Publish
+      run: msbuild OutlookOkan/OutlookOkan.csproj /t:Publish /p:Configuration=Release /p:Platform=AnyCPU /p:PublishDir=app.publish/
 
     - name: Archive Production Artifacts
       uses: actions/upload-artifact@v4
