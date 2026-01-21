@@ -44,7 +44,7 @@ jobs:
       shell: pwsh
 
     - name: Build and Publish
-      run: msbuild OutlookOkan/OutlookOkan.csproj /t:Publish /p:Configuration=Release /p:Platform=AnyCPU /p:PublishDir=app.publish/ /p:ManifestTimestampUrl="" /fl /flp:logfile=msbuild.log;verbosity=detailed
+      run: msbuild OutlookOkan/OutlookOkan.csproj /t:Publish /p:Configuration=Release /p:Platform=AnyCPU /p:PublishDir=app.publish/ /p:ManifestTimestampUrl="" /fl "/flp:logfile=msbuild.log;verbosity=detailed"
 
     - name: Archive Production Artifacts
       uses: actions/upload-artifact@v4
