@@ -2234,8 +2234,11 @@ namespace OutlookOkan.Models
                     }
                     return null;
                 });
-
-            return null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>
