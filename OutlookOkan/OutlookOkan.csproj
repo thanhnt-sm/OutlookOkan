@@ -376,6 +376,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <SignManifests>false</SignManifests>
+    <GenerateManifests>false</GenerateManifests>
   </PropertyGroup>
   <PropertyGroup>
     <ManifestKeyFile></ManifestKeyFile>
