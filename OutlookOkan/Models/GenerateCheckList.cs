@@ -2237,6 +2237,7 @@ namespace OutlookOkan.Models
             }
             catch (Exception)
             {
+                // Force commit: Ensure CI catches this fix
                 return null;
             }
         }

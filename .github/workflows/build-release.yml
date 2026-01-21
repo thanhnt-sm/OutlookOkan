@@ -1,4 +1,4 @@
-name: Build and Release OutlookOkan
+name: Build and Release OutlookOkan_thantn
 
 on:
   push:
