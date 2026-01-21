@@ -246,6 +246,8 @@
     </Compile>
     <Compile Include="Ribbon.cs" />
     <Compile Include="Services\ResourceService.cs" />
+    <Compile Include="Services\SettingsService.cs" />
+    <Compile Include="Helpers\ComRetryHelper.cs" />
     <Compile Include="Properties\Settings.cs" />
     <Compile Include="Types\AlertAddress.cs" />
     <Compile Include="Types\AlertKeywordAndMessage.cs" />
