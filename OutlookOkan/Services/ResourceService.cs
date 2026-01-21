@@ -7,7 +7,7 @@ namespace OutlookOkan.Services
 {
     internal class ResourceService : INotifyPropertyChanged
     {
-        // Singleton instance.
+        // Thể hiện Singleton.
         public static ResourceService Instance { get; } = new ResourceService();
         private ResourceService() { }
 

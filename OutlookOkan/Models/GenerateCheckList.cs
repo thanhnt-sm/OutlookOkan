@@ -200,7 +200,7 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// 送信元アドレスと送信元ドメインを取得。
+        /// Lấy địa chỉ người gửi và tên miền người gửi.
         /// </summary>
         /// <param name="item">Item</param>
         /// <param name="checkList">CheckList</param>
@@ -211,18 +211,18 @@ namespace OutlookOkan.Models
             {
                 if (typeof(T) == typeof(Outlook.MailItem) && !string.IsNullOrEmpty(((Outlook.MailItem)item).SentOnBehalfOfName))
                 {
-                    //代理送信の場合。
+                    // Trường hợp gửi thay mặt.
                     checkList.Sender = ((Outlook.MailItem)item).Sender?.Address ?? Resources.FailedToGetInformation;
 
                     if (IsValidEmailAddress(checkList.Sender))
                     {
-                        //メールアドレスが取得できる場合はそのまま使う。
+                        // Nếu có thể lấy được địa chỉ email thì sử dụng như bình thường.
                         checkList.SenderDomain = checkList.Sender.Substring(checkList.Sender.IndexOf("@", StringComparison.Ordinal));
                         checkList.Sender = $@"{checkList.Sender} ([{((Outlook.MailItem)item).SentOnBehalfOfName}] {Resources.SentOnBehalf})";
                     }
                     else
                     {
-                        //代理送信の場合かつExchangeのCN。
+                        // Trường hợp gửi thay mặt và là CN của Exchange.
                         checkList.Sender = $@"[{((Outlook.MailItem)item).SentOnBehalfOfName}] {Resources.SentOnBehalf}";
                         checkList.SenderDomain = @"------------------";
 
@@ -239,14 +239,14 @@ namespace OutlookOkan.Models
 
                         if (!(exchangeUser is null))
                         {
-                            //ユーザの代理送信。
+                            // Người dùng gửi thay mặt.
                             checkList.Sender = $@"{exchangeUser.PrimarySmtpAddress} ([{((Outlook.MailItem)item).SentOnBehalfOfName}] {Resources.SentOnBehalf})";
                             checkList.SenderDomain = exchangeUser.PrimarySmtpAddress.Substring(exchangeUser.PrimarySmtpAddress.IndexOf("@", StringComparison.Ordinal));
                         }
 
                         if (!(exchangeDistributionList is null))
                         {
-                            //配布リストの代理送信。
+                            // Danh sách phân phối gửi thay mặt.
                             checkList.Sender = $@"{exchangeDistributionList.PrimarySmtpAddress} ([{((Outlook.MailItem)item).SentOnBehalfOfName}] {Resources.SentOnBehalf})";
                             checkList.SenderDomain = exchangeDistributionList.PrimarySmtpAddress.Substring(exchangeDistributionList.PrimarySmtpAddress.IndexOf("@", StringComparison.Ordinal));
                         }
@@ -324,25 +324,25 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// メール本文をテキスト形式で取得する。
+        /// Lấy nội dung email dưới dạng văn bản (text).
         /// </summary>
-        /// <param name="mailBodyFormat">メール本文の種別</param>
-        /// <param name="mailBody">メール本文</param>
-        /// <returns>メール本文(テキスト形式)</returns>
+        /// <param name="mailBodyFormat">Định dạng nội dung email</param>
+        /// <param name="mailBody">Nội dung email</param>
+        /// <returns>Nội dung email (dạng văn bản)</returns>
         private string GetMailBody(Outlook.OlBodyFormat mailBodyFormat, string mailBody)
         {
-            //改行が2行になる問題を回避するため、HTML形式の場合にのみ2行連続した改行を1行に置換する。
+            // Để tránh vấn đề xuống dòng thành 2 dòng, chỉ thay thế 2 dòng xuống dòng liên tiếp thành 1 dòng trong trường hợp định dạng HTML.
             return mailBodyFormat == Outlook.OlBodyFormat.olFormatHTML ? mailBody.Replace("\r\n\r\n", "\r\n") : mailBody;
         }
 
         /// <summary>
-        /// 内部ドメインを除く宛先のドメイン数を数える。
+        /// Đếm số lượng tên miền bên ngoài (trừ tên miền nội bộ).
         /// </summary>
-        /// <param name="displayNameAndRecipient">宛先アドレスと名称</param>
-        /// <param name="senderDomain">送信元ドメイン</param>
-        /// <param name="internalDomain">内部ドメイン設定</param>
-        /// <param name="isToAndCcOnly">対象がToとCcのみか否か</param>
-        /// <returns>内部ドメインを除く宛先のドメイン数</returns>
+        /// <param name="displayNameAndRecipient">Địa chỉ và tên người nhận</param>
+        /// <param name="senderDomain">Tên miền người gửi</param>
+        /// <param name="internalDomain">Cài đặt tên miền nội bộ</param>
+        /// <param name="isToAndCcOnly">Chỉ áp dụng cho To và Cc hay không</param>
+        /// <returns>Số lượng tên miền bên ngoài</returns>
         private int CountRecipientExternalDomains(DisplayNameAndRecipient displayNameAndRecipient, string senderDomain, IEnumerable<InternalDomain> internalDomain, bool isToAndCcOnly)
         {
             var domainList = new HashSet<string>();
@@ -374,7 +374,7 @@ namespace OutlookOkan.Models
                 externalDomainsCount--;
             }
 
-            //外部ドメインの数のため、送信者のドメインが含まれていた場合それをマイナスする。
+            // Vì là đếm số lượng tên miền bên ngoài, nên nếu bao gồm tên miền người gửi thì trừ đi.
             if (domainList.Contains(senderDomain))
             {
                 return externalDomainsCount - 1;
@@ -384,10 +384,10 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// 宛先メールアドレスと宛先名称を取得する。
+        /// Lấy địa chỉ email và tên hiển thị của người nhận.
         /// </summary>
-        /// <param name="recipient">メールの宛先</param>
-        /// <returns>宛先メールアドレスと宛先名称</returns>
+        /// <param name="recipient">Người nhận email</param>
+        /// <returns>Địa chỉ email và tên hiển thị</returns>
         private IEnumerable<NameAndRecipient> GetNameAndRecipient(Outlook.Recipient recipient)
         {
             _failedToGetInformationOfRecipientsMailAddressCounter++;
@@ -459,12 +459,12 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// Exchangeの配布リストを展開して宛先メールアドレスと宛先名称を取得する。(入れ子は非展開)
+        /// Mở rộng danh sách phân phối Exchange để lấy địa chỉ email và tên hiển thị. (Không mở rộng lồng nhau)
         /// </summary>
-        /// <param name="recipient">メールの宛先</param>
-        /// <param name="enableGetExchangeDistributionListMembers">配布リスト展開のオンオフ設定</param>
-        /// <param name="exchangeDistributionListMembersAreWhite">配布リストで展開したアドレスを許可リスト登録扱いするか否かの設定</param>
-        /// <returns>宛先メールアドレスと宛先名称</returns>
+        /// <param name="recipient">Người nhận email</param>
+        /// <param name="enableGetExchangeDistributionListMembers">Cài đặt bật/tắt mở rộng danh sách phân phối</param>
+        /// <param name="exchangeDistributionListMembersAreWhite">Cài đặt xem các địa chỉ được mở rộng từ danh sách phân phối có được coi là whitelist hay không</param>
+        /// <returns>Địa chỉ email và tên hiển thị</returns>
         private IEnumerable<NameAndRecipient> GetExchangeDistributionListMembers(Outlook.Recipient recipient, bool enableGetExchangeDistributionListMembers, bool exchangeDistributionListMembersAreWhite)
         {
             _failedToGetInformationOfRecipientsMailAddressCounter++;
@@ -530,7 +530,7 @@ namespace OutlookOkan.Models
                         System.Diagnostics.Debug.WriteLine($"Error resolving recipient: {ex}");
                     }
 
-                    // 入れ子になった配布リストは、Exchangeサーバへの負荷が大きく、取得に時間もかかるため展開しない。
+                    // Danh sách phân phối lồng nhau gây tải lớn cho máy chủ Exchange và tốn thời gian lấy nên không mở rộng.
                     exchangeDistributionListMembers.Add(new NameAndRecipient { MailAddress = mailAddress, NameAndMailAddress = (member.Name ?? Resources.FailedToGetInformation) + $@" ({mailAddress})", IncludedGroupAndList = $@" [{distributionList.Name}]" });
 
                     if (exchangeDistributionListMembersAreWhite)
@@ -549,13 +549,13 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// 連絡先グループを展開して宛先メールアドレスと宛先名称を取得する。(入れ子も自動展開。)
+        /// Mở rộng nhóm liên hệ để lấy địa chỉ email và tên hiển thị. (Tự động mở rộng lồng nhau.)
         /// </summary>
-        /// <param name="recipient">メールの宛先</param>
-        /// <param name="contactGroupId">既に確認したGroupID</param>
-        /// <param name="enableGetContactGroupMembers">連絡先グループ展開のオンオフ設定</param>
-        /// <param name="contactGroupMembersAreWhite">連絡先グループで展開したアドレスを許可リスト登録扱いするか否かの設定</param>
-        /// <returns>宛先メールアドレスと宛先名称</returns>
+        /// <param name="recipient">Người nhận email</param>
+        /// <param name="contactGroupId">GroupID đã kiểm tra</param>
+        /// <param name="enableGetContactGroupMembers">Cài đặt bật/tắt mở rộng nhóm liên hệ</param>
+        /// <param name="contactGroupMembersAreWhite">Cài đặt xem các địa chỉ được mở rộng từ nhóm liên hệ có được coi là whitelist hay không</param>
+        /// <returns>Địa chỉ email và tên hiển thị</returns>
         private IEnumerable<NameAndRecipient> GetContactGroupMembers(Outlook.Recipient recipient, string contactGroupId, bool enableGetContactGroupMembers, bool contactGroupMembersAreWhite)
         {
             var contactGroupMembers = new List<NameAndRecipient>();
@@ -573,7 +573,7 @@ namespace OutlookOkan.Models
             }
             else
             {
-                //入れ子の場合のID。
+                // ID trong trường hợp lồng nhau.
                 entryId = recipient.AddressEntry.ID.Substring(42);
             }
 
@@ -606,13 +606,13 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// 送信先の表示名と表示名とメールアドレスを対応させる。(Outlookの仕様上、表示名にメールアドレスが含まれない事がある。)
+        /// Khớp tên hiển thị của người nhận với tên hiển thị và địa chỉ email. (Theo đặc tả của Outlook, tên hiển thị có thể không chứa địa chỉ email.)
         /// </summary>
-        /// <param name="recipients">メールの宛先</param>
-        /// <param name="displayNameAndRecipient">宛先アドレスと名称</param>
-        /// <param name="generalSetting">一般設定</param>
-        /// <param name="isMeetingItem">メールアイテムか否か</param>
-        /// <returns>宛先アドレスと名称</returns>
+        /// <param name="recipients">Người nhận email</param>
+        /// <param name="displayNameAndRecipient">Địa chỉ và tên người nhận</param>
+        /// <param name="generalSetting">Cài đặt chung</param>
+        /// <param name="isMeetingItem">Có phải là item cuộc họp không</param>
+        /// <returns>Địa chỉ và tên người nhận</returns>
         private DisplayNameAndRecipient MakeDisplayNameAndRecipient(IEnumerable recipients, DisplayNameAndRecipient displayNameAndRecipient, GeneralSetting generalSetting, bool isMeetingItem)
         {
             foreach (Outlook.Recipient recipient in recipients)
@@ -720,10 +720,10 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// ファイルの添付忘れを確認。
+        /// Kiểm tra việc quên đính kèm tệp.
         /// </summary>
         /// <param name="checkList">CheckList</param>
-        /// <param name="generalSetting">一般設定</param>
+        /// <param name="generalSetting">Cài đặt chung</param>
         /// <returns>CheckList</returns>
         private CheckList CheckForgotAttach(CheckList checkList, GeneralSetting generalSetting)
         {
@@ -740,10 +740,10 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// メールの形式を取得し、表示用の文字列を返す。
+        /// Lấy định dạng email và trả về chuỗi hiển thị.
         /// </summary>
-        /// <param name="bodyFormat">メールのフォーマット</param>
-        /// <returns>メールの形式</returns>
+        /// <param name="bodyFormat">Định dạng email</param>
+        /// <returns>Định dạng email</returns>
         private string GetMailBodyFormat(Outlook.OlBodyFormat bodyFormat)
         {
             switch (bodyFormat)
@@ -762,10 +762,10 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// 本文に登録したキーワードがある場合、登録した警告文を表示する。
+        /// Nếu có từ khóa đã đăng ký trong nội dung, hiển thị thông báo cảnh báo đã đăng ký.
         /// </summary>
         /// <param name="checkList">CheckList</param>>
-        /// <param name="alertKeywordAndMessageList">警告キーワード設定</param>>
+        /// <param name="alertKeywordAndMessageList">Cài đặt từ khóa cảnh báo</param>>
         /// <returns>CheckList</returns>
         private CheckList CheckKeyword(CheckList checkList, IReadOnlyCollection<AlertKeywordAndMessage> alertKeywordAndMessageList)
         {
@@ -790,10 +790,10 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// 件名に登録したキーワードがある場合、登録した警告文を表示する。
+        /// Nếu có từ khóa đã đăng ký trong tiêu đề, hiển thị thông báo cảnh báo đã đăng ký.
         /// </summary>
         /// <param name="checkList">CheckList</param>>
-        /// <param name="alertKeywordAndMessageForSubjectList">警告キーワード設定</param>>
+        /// <param name="alertKeywordAndMessageForSubjectList">Cài đặt từ khóa cảnh báo</param>>
         /// <returns>CheckList</returns>
         private CheckList CheckKeywordForSubject(CheckList checkList, IReadOnlyCollection<AlertKeywordAndMessageForSubject> alertKeywordAndMessageForSubjectList)
         {
@@ -818,19 +818,19 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// 条件に一致した場合、CcやBccに宛先を追加する。
+        /// Thêm người nhận vào Cc hoặc Bcc nếu thỏa mãn điều kiện.
         /// </summary>
         /// <param name="item">Item</param>
-        /// <param name="generalSetting">一般設定</param>
-        /// <param name="displayNameAndRecipient">宛先アドレスと名称設定</param>
-        /// <param name="autoCcBccKeywordList">自動Cc/Bcc追加(キーワード)設定</param>
-        /// <param name="autoCcBccAttachedFilesList">自動Cc/Bcc追加(キーワード)設定</param>
-        /// <param name="autoCcBccRecipientList">自動Cc/Bcc追加(宛先)設定</param>
-        /// <param name="externalDomainCount">外部ドメイン数</param>
-        /// <param name="sender">CheckListのセンダー情報</param>
-        /// <param name="isAutoAddSenderToBcc">自動で送信元アドレスをBccに追加するか否か</param>
-        /// <param name="isAutoAddSenderToCc">自動で送信元アドレスをCcに追加するか否か</param>
-        /// <returns>CcやBccに自動追加された宛先アドレス</returns>
+        /// <param name="generalSetting">Cài đặt chung</param>
+        /// <param name="displayNameAndRecipient">Cài đặt tên hiển thị và địa chỉ</param>
+        /// <param name="autoCcBccKeywordList">Cài đặt tự động thêm Cc/Bcc theo từ khóa</param>
+        /// <param name="autoCcBccAttachedFilesList">Cài đặt tự động thêm Cc/Bcc theo tệp đính kèm</param>
+        /// <param name="autoCcBccRecipientList">Cài đặt tự động thêm Cc/Bcc theo người nhận</param>
+        /// <param name="externalDomainCount">Số lượng tên miền bên ngoài</param>
+        /// <param name="sender">Sender info from CheckList</param>
+        /// <param name="isAutoAddSenderToBcc">Có tự động thêm địa chỉ người gửi vào Bcc hay không</param>
+        /// <param name="isAutoAddSenderToCc">Có tự động thêm địa chỉ người gửi vào Cc hay không</param>
+        /// <returns>Danh sách địa chỉ được tự động thêm vào Cc hoặc Bcc</returns>
         private List<Outlook.Recipient> AutoAddCcAndBcc<T>(T item, GeneralSetting generalSetting, DisplayNameAndRecipient displayNameAndRecipient, IReadOnlyCollection<AutoCcBccKeyword> autoCcBccKeywordList, IReadOnlyCollection<AutoCcBccAttachedFile> autoCcBccAttachedFilesList, IReadOnlyCollection<AutoCcBccRecipient> autoCcBccRecipientList, int externalDomainCount, string sender, bool isAutoAddSenderToBcc, bool isAutoAddSenderToCc)
         {
             var autoAddedCcAddressList = new List<string>();
@@ -869,7 +869,7 @@ namespace OutlookOkan.Models
                 }
             }
 
-            //警告対象の添付ファイル数が0でない場合のみ、CcやBccの追加処理を行う。
+            // Chỉ thực hiện thêm Cc hoặc Bcc nếu số lượng tệp đính kèm thuộc diện cảnh báo khác 0.
             if (_checkList.Attachments.Count != 0 && !(externalDomainCount == 0 && generalSetting.IsDoNotUseAutoCcBccAttachedFileIfAllRecipientsAreInternalDomain))
             {
                 if (autoCcBccAttachedFilesList.Count != 0)
@@ -935,7 +935,7 @@ namespace OutlookOkan.Models
                 }
             }
 
-            //常に自分をCcまたはBccに入れるオプションが有効な場合、それをする。
+            // Nếu tùy chọn luôn thêm bản thân vào Cc hoặc Bcc được bật, hãy thực hiện việc đó.
             if (isAutoAddSenderToCc || isAutoAddSenderToBcc)
             {
                 var addSenderToCc = isAutoAddSenderToCc;
@@ -1049,16 +1049,16 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// HTML内に埋め込まれた添付ファイル名を取得する。
+        /// Lấy danh sách tên tệp đính kèm được nhúng trong HTML.
         /// </summary>
         /// <param name="item">Item</param>
-        /// <param name="mailHtmlBody">メール本文(HTML形式)</param>
-        /// <returns>埋め込みファイル名のList</returns>
+        /// <param name="mailHtmlBody">Nội dung thư (định dạng HTML)</param>
+        /// <returns>Danh sách tên tệp đính kèm nhúng</returns>
         private List<string> MakeEmbeddedAttachmentsList<T>(T item, string mailHtmlBody)
         {
             if (typeof(T) == typeof(Outlook.MailItem))
             {
-                //HTML形式の場合のみ、処理対象とする。
+                // Chỉ xử lý nếu định dạng là HTML.
                 if (((Outlook.MailItem)item).BodyFormat != Outlook.OlBodyFormat.olFormatHTML) return null;
             }
 
@@ -1076,14 +1076,14 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// 添付ファイルとそのファイルサイズを取得し、チェックリストに追加する。
+        /// Lấy thông tin tệp đính kèm và kích thước tệp, sau đó thêm vào CheckList.
         /// </summary>
         /// <param name="item">Item</param>
         /// <param name="checkList">CheckList</param>
-        /// <param name="isNotTreatedAsAttachmentsAtHtmlEmbeddedFiles">HTML埋め込みの添付ファイル無視設定</param>
-        /// <param name="attachmentsSetting">添付ファイルに関する設定</param>
-        /// <param name="mailHtmlBody">メール本文(HTML形式)</param>
-        /// <param name="isAutoCheckAttachments">既定のチェック有無</param>
+        /// <param name="isNotTreatedAsAttachmentsAtHtmlEmbeddedFiles">Cài đặt bỏ qua tệp đính kèm nhúng trong HTML</param>
+        /// <param name="attachmentsSetting">Cài đặt liên quan đến tệp đính kèm</param>
+        /// <param name="mailHtmlBody">Nội dung thư (định dạng HTML)</param>
+        /// <param name="isAutoCheckAttachments">Có tự động kiểm tra hay không</param>
         /// <returns>CheckList</returns>
         private CheckList GetAttachmentsInformation<T>(in T item, CheckList checkList, bool isNotTreatedAsAttachmentsAtHtmlEmbeddedFiles, AttachmentsSetting attachmentsSetting, string mailHtmlBody, bool isAutoCheckAttachments)
         {
@@ -1123,7 +1123,7 @@ namespace OutlookOkan.Models
                     checkList.Alerts.Add(new Alert { AlertMessage = Resources.IsBigAttachedFile + $"[{((dynamic)item).Attachments[i + 1].FileName}]", IsChecked = false, IsImportant = true, IsWhite = false });
                 }
 
-                //一部の状態で添付ファイルのファイルタイプを取得できないため、それを回避。
+                // Tránh lỗi không lấy được loại tệp trong một số trường hợp.
                 string fileType;
                 try
                 {
@@ -1151,10 +1151,10 @@ namespace OutlookOkan.Models
                     fileName = Resources.Unknown;
                 }
 
-                //情報取得に完全に失敗した添付ファイルは無視する。(リッチテキスト形式の埋め込み画像など)
+                // Bỏ qua các tệp đính kèm mà việc lấy thông tin hoàn toàn thất bại (ví dụ: hình ảnh nhúng định dạng Rich Text).
                 if (fileName == Resources.Unknown && fileSize == "?KB" && fileType == Resources.Unknown) continue;
 
-                //電子署名付きメールの証明書はあえて無視する。
+                // Chủ đích bỏ qua chứng chỉ của email có chữ ký số.
                 if (fileType == ".p7s" || fileType == "p7s") continue;
 
                 var isEncrypted = false;
@@ -1191,7 +1191,7 @@ namespace OutlookOkan.Models
 
                     if (attachmentsSetting.IsEnableOpenAttachedFiles && attachmentsSetting.TargetAttachmentFileExtensionOfOpen.ToLower().Contains(fileType.ToLower()))
                     {
-                        //ファイルを開くためにテンポラリディレクトリにコピーして、そのパスを記録
+                        // Sao chép vào thư mục tạm thời để mở tệp và ghi lại đường dẫn đó.
                         tempFilePath = Path.Combine(tempDirectoryPath, fileName);
                         ((dynamic)item).Attachments[i + 1].SaveAsFile(tempFilePath);
                         isCanOpen = true;
@@ -1229,7 +1229,7 @@ namespace OutlookOkan.Models
                     continue;
                 }
 
-                //HTML埋め込みファイルは無視する。
+                // Bỏ qua tệp nhúng HTML.
                 if (!embeddedAttachmentsName.Contains(fileName))
                 {
                     checkList.Attachments.Add(new Attachment
@@ -1262,20 +1262,20 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// 登録された名称とドメインから、宛先候補ではないアドレスが宛先に含まれている場合に、警告を表示する。
+        /// Hiển thị cảnh báo nếu có địa chỉ không phải là địa chỉ đề xuất (dựa trên tên và tên miền đã đăng ký) nằm trong danh sách người nhận.
         /// </summary>
         /// <param name="checkList">CheckList</param>
-        /// <param name="displayNameAndRecipient">宛先アドレスと名称</param>
-        /// <param name="nameAndDomainsList">宛先と名称のリスト</param>
-        /// <param name="isCheckNameAndDomainsFromRecipients">本文内に宛先名称が無い場合にも警告を表示するか否か</param>
-        /// <param name="isCheckNameAndDomainsIncludeSubject">対象に件名を含めるか否か</param>
-        /// <param name="isCheckNameAndDomainsFromSubject">件名内に宛先名称が無い場合にも警告を表示するか否か</param>
+        /// <param name="displayNameAndRecipient">Cài đặt tên hiển thị và địa chỉ</param>
+        /// <param name="nameAndDomainsList">Danh sách tên và tên miền</param>
+        /// <param name="isCheckNameAndDomainsFromRecipients">Có hiển thị cảnh báo ngay cả khi không có tên người nhận trong nội dung hay không</param>
+        /// <param name="isCheckNameAndDomainsIncludeSubject">Có bao gồm tiêu đề vào đối tượng kiểm tra hay không</param>
+        /// <param name="isCheckNameAndDomainsFromSubject">Có hiển thị cảnh báo ngay cả khi không có tên người nhận trong tiêu đề hay không</param>
         /// <returns>CheckList</returns>
         private CheckList CheckMailBodyAndRecipient(CheckList checkList, DisplayNameAndRecipient displayNameAndRecipient, IEnumerable<NameAndDomains> nameAndDomainsList, bool isCheckNameAndDomainsFromRecipients, bool isCheckNameAndDomainsIncludeSubject, bool isCheckNameAndDomainsFromSubject)
         {
             if (displayNameAndRecipient is null) return checkList;
 
-            //空の設定値があると誤検知するため、空を省く。
+            // Nếu có giá trị cài đặt trống sẽ gây ra cảnh báo sai, nên loại bỏ các giá trị trống.
             var cleanedNameAndDomains = nameAndDomainsList.Where(nameAndDomain => !string.IsNullOrEmpty(nameAndDomain.Domain) && !string.IsNullOrEmpty(nameAndDomain.Name)).ToList();
             if (!cleanedNameAndDomains.Any()) return checkList;
 
@@ -1334,14 +1334,14 @@ namespace OutlookOkan.Models
             if (isCheckNameAndDomainsIncludeSubject) { targetText += checkList.Subject; }
 
             var recipientCandidateDomains = (from nameAndDomain in cleanedNameAndDomains where targetText.Contains(nameAndDomain.Name) select nameAndDomain.Domain).ToList();
-            //送信先の候補が見つからない場合、これ以上何もしない。(見つからない場合の方が多いため、警告ばかりになってしまう。)
+            // Nếu không tìm thấy ứng viên người nhận nào, không làm gì thêm. (Vì trường hợp không tìm thấy phổ biến hơn, nên nếu cảnh báo sẽ gây phiền nhiễu.)
             if (recipientCandidateDomains.Count == 0) return checkList;
 
             foreach (var recipient in displayNameAndRecipient.All)
             {
                 if (recipientCandidateDomains.Any(domains => recipient.Key.EndsWith(domains) || domains.Equals(recipient.Key))) continue;
 
-                //送信者ドメインは警告対象外。
+                // Tên miền người gửi không thuộc diện cảnh báo.
                 if (!recipient.Key.Contains(checkList.SenderDomain))
                 {
                     checkList.Alerts.Add(new Alert
@@ -1358,18 +1358,18 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// 登録されたキーワードに対応する宛先がない場合、警告する。
+        /// Cảnh báo nếu không có người nhận tương ứng với từ khóa đã đăng ký.
         /// </summary>
         /// <param name="checkList">CheckList</param>
-        /// <param name="displayNameAndRecipient">宛先アドレスと名称</param>
-        /// <param name="keywordAndRecipients">キーワードと宛先のリスト</param>
-        /// <param name="isCheckKeywordAndRecipientsIncludeSubject">件名も対象に含むか否か</param>
-        /// <returns></returns>
+        /// <param name="displayNameAndRecipient">Cài đặt tên hiển thị và địa chỉ</param>
+        /// <param name="keywordAndRecipients">Danh sách từ khóa và người nhận</param>
+        /// <param name="isCheckKeywordAndRecipientsIncludeSubject">Có bao gồm tiêu đề vào đối tượng kiểm tra hay không</param>
+        /// <returns>CheckList</returns>
         private CheckList CheckKeywordAndRecipient(CheckList checkList, DisplayNameAndRecipient displayNameAndRecipient, IEnumerable<KeywordAndRecipients> keywordAndRecipients, bool isCheckKeywordAndRecipientsIncludeSubject)
         {
             if (displayNameAndRecipient is null) return checkList;
 
-            //空の設定値があると誤検知するため、空を省く。
+            // Nếu có giá trị cài đặt trống sẽ gây ra cảnh báo sai, nên loại bỏ các giá trị trống.
             var cleanedKeywordAndRecipients = keywordAndRecipients.Where(keywordAndRecipient => !string.IsNullOrEmpty(keywordAndRecipient.Keyword) && !string.IsNullOrEmpty(keywordAndRecipient.Recipient)).ToList();
             if (!cleanedKeywordAndRecipients.Any()) return checkList;
 
@@ -1406,12 +1406,12 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// 送信先メールアドレスを取得し、チェックリストに追加する。
+        /// Lấy địa chỉ email người nhận và thêm vào CheckList.
         /// </summary>
         /// <param name="checkList">CheckList</param>
-        /// <param name="displayNameAndRecipient">宛先アドレスと名称</param>
-        /// <param name="alertAddressList">警告アドレス設定</param>
-        /// <param name="internalDomainList">内部ドメイン設定</param>
+        /// <param name="displayNameAndRecipient">Cài đặt tên hiển thị và địa chỉ</param>
+        /// <param name="alertAddressList">Cài đặt địa chỉ cảnh báo</param>
+        /// <param name="internalDomainList">Cài đặt tên miền nội bộ</param>
         /// <returns>CheckList</returns>
         private CheckList GetRecipient(CheckList checkList, DisplayNameAndRecipient displayNameAndRecipient, IReadOnlyCollection<AlertAddress> alertAddressList, IReadOnlyCollection<InternalDomain> internalDomainList)
         {
@@ -1568,13 +1568,13 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// 送信遅延時間を算出する。(条件に該当する最も長い送信遅延時間を返す。)
+        /// Tính toán thời gian trì hoãn gửi. (Trả về thời gian trì hoãn dài nhất phù hợp với điều kiện.)
         /// </summary>
-        /// <param name="displayNameAndRecipient">宛先アドレスと名称</param>
-        /// <param name="deferredDeliveryMinutes">遅延送信設定</param>
-        /// <param name="isDoNotUseDeferredDeliveryIfAllRecipientsAreInternalDomain">外部ドメイン数が0の際の機能使用有無</param>
-        /// <param name="externalDomainCount">外部ドメイン数</param>
-        /// <returns>送信遅延時間(分)</returns>
+        /// <param name="displayNameAndRecipient">Cài đặt tên hiển thị và địa chỉ</param>
+        /// <param name="deferredDeliveryMinutes">Cài đặt trì hoãn gửi</param>
+        /// <param name="isDoNotUseDeferredDeliveryIfAllRecipientsAreInternalDomain">Có sử dụng tính năng này khi số tên miền bên ngoài bằng 0 hay không</param>
+        /// <param name="externalDomainCount">Số lượng tên miền bên ngoài</param>
+        /// <returns>Thời gian trì hoãn gửi (phút)</returns>
         private int CalcDeferredMinutes(DisplayNameAndRecipient displayNameAndRecipient, IReadOnlyCollection<DeferredDeliveryMinutes> deferredDeliveryMinutes, bool isDoNotUseDeferredDeliveryIfAllRecipientsAreInternalDomain, int externalDomainCount)
         {
             if (deferredDeliveryMinutes.Count == 0) return 0;
@@ -1582,7 +1582,7 @@ namespace OutlookOkan.Models
 
             var deferredMinutes = 0;
 
-            //@のみで登録していた場合、それを標準の送信遅延時間とする。
+            // Nếu đã đăng ký chỉ với "@", hãy coi đó là thời gian trì hoãn gửi mặc định.
             foreach (var config in deferredDeliveryMinutes.Where(config => config.TargetAddress == "@"))
             {
                 deferredMinutes = config.DeferredMinutes;
@@ -1625,16 +1625,16 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// ToとCcの外部ドメイン数が規定値以上の場合に、警告を表示したり、メール送信を禁止したりする。
+        /// Hiển thị cảnh báo hoặc cấm gửi email nếu số lượng tên miền bên ngoài trong To và Cc vượt quá giá trị quy định.
         /// </summary>
         /// <param name="checkList">CheckList</param>
-        /// <param name="settings">外部ドメイン数の警告と自動Bcc変換の設定</param>
-        /// <param name="externalDomainNumToAndCc">ToとCcの外部ドメイン数</param>
-        /// <param name="isForceAutoChangeRecipientsToBcc">強制的に全ての宛先をBccに変換するか否か</param>
+        /// <param name="settings">Cài đặt cảnh báo số lượng tên miền bên ngoài và tự động chuyển sang Bcc</param>
+        /// <param name="externalDomainNumToAndCc">Số lượng tên miền bên ngoài trong To và Cc</param>
+        /// <param name="isForceAutoChangeRecipientsToBcc">Có bắt buộc chuyển tất cả người nhận sang Bcc hay không</param>
         /// <returns>CheckList</returns>
         private CheckList ExternalDomainsWarningIfNeeded(CheckList checkList, ExternalDomainsWarningAndAutoChangeToBcc settings, int externalDomainNumToAndCc, bool isForceAutoChangeRecipientsToBcc)
         {
-            //強制Bcc変換が有効な場合、この機能は無視する。
+            // Nếu tính năng bắt buộc chuyển đổi Bcc được bật, hãy bỏ qua tính năng này.
             if (isForceAutoChangeRecipientsToBcc) return checkList;
 
             if (settings.TargetToAndCcExternalDomainsNum > externalDomainNumToAndCc) return checkList;
@@ -1664,12 +1664,12 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// 指定した宛先をTo及びCcから削除し、Bccへ追加する。
+        /// Xóa địa chỉ người nhận được chỉ định khỏi To và Cc, và thêm vào Bcc.
         /// </summary>
         /// <param name="item">Item</param>
-        /// <param name="mailItemsRecipientAndMailAddress">メールアドレスとMailItemのRecipient</param>
-        /// <param name="senderMailAddress">送信元メールアドレス</param>
-        /// <param name="isNeedsAddToSender">Toへ送信元アドレスを追加するか否か</param>
+        /// <param name="mailItemsRecipientAndMailAddress">Địa chỉ email và Recipient của MailItem</param>
+        /// <param name="senderMailAddress">Địa chỉ email người gửi</param>
+        /// <param name="isNeedsAddToSender">Có thêm địa chỉ người gửi vào To hay không</param>
         private void ChangeToBcc<T>(T item, IReadOnlyCollection<MailItemsRecipientAndMailAddress> mailItemsRecipientAndMailAddress, string senderMailAddress, bool isNeedsAddToSender)
         {
             if ((dynamic)item is null) return;
@@ -1684,7 +1684,7 @@ namespace OutlookOkan.Models
                 }
             }
 
-            //Indexを使用してRemoveした場合、Indexがずれ、複数を正しく削除できないため、削除対象を探して削除する。
+            // Nếu sử dụng Index để xóa, Index sẽ bị lệch và không thể xóa chính xác nhiều mục, vì vậy hãy tìm đối tượng cần xóa và xóa nó.
             var targetCount = targetMailAddressAndRecipient.Count;
             while (targetCount > 0)
             {
@@ -1714,16 +1714,16 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// 条件に該当する場合、ToとCcの外部アドレスをBccに変換する。
+        /// Nếu điều kiện được đáp ứng, chuyển đổi các địa chỉ bên ngoài trong To và Cc sang Bcc.
         /// </summary>
         /// <param name="item">Item</param>
-        /// <param name="displayNameAndRecipient">宛先アドレスと名称</param>
-        /// <param name="settings">外部ドメイン数の警告と自動Bcc変換の設定</param>
-        /// <param name="internalDomains">内部ドメイン</param>
-        /// <param name="externalDomainNumToAndCc">ToとCcの外部ドメイン数</param>
-        /// <param name="senderDomain">送信元ドメイン</param>
-        /// <param name="senderMailAddress">送信元アドレス</param>
-        /// <param name="forceAutoChangeRecipientsToBccSetting">forceAutoChangeRecipientsToBccSetting</param>
+        /// <param name="displayNameAndRecipient">Cài đặt tên hiển thị và địa chỉ</param>
+        /// <param name="settings">Cài đặt cảnh báo số lượng tên miền bên ngoài và tự động chuyển sang Bcc</param>
+        /// <param name="internalDomains">Tên miền nội bộ</param>
+        /// <param name="externalDomainNumToAndCc">Số lượng tên miền bên ngoài trong To và Cc</param>
+        /// <param name="senderDomain">Tên miền người gửi</param>
+        /// <param name="senderMailAddress">Địa chỉ người gửi</param>
+        /// <param name="forceAutoChangeRecipientsToBccSetting">Cài đặt bắt buộc chuyển đổi người nhận sang Bcc</param>
         /// <returns>DisplayNameAndRecipient</returns>
         private DisplayNameAndRecipient ExternalDomainsChangeToBccIfNeeded<T>(T item, DisplayNameAndRecipient displayNameAndRecipient, ExternalDomainsWarningAndAutoChangeToBcc settings, ICollection<InternalDomain> internalDomains, int externalDomainNumToAndCc, string senderDomain, string senderMailAddress, ForceAutoChangeRecipientsToBcc forceAutoChangeRecipientsToBccSetting)
         {
@@ -1784,7 +1784,7 @@ namespace OutlookOkan.Models
             {
                 AddAlerts(Resources.ExternalDomainsChangeToBccAlert + $"[{settings.TargetToAndCcExternalDomainsNum}]", true, false, false);
             }
-            //Toが存在しなくなる場合、送信者をToに追加する。
+            // Nếu To không còn tồn tại, thêm người gửi vào To.
             var isNeedsAddToSender = false;
             var thisSenderMailAddress = forceAutoChangeRecipientsToBccSetting.IsForceAutoChangeRecipientsToBcc && !string.IsNullOrEmpty(forceAutoChangeRecipientsToBccSetting.ToRecipient) ? forceAutoChangeRecipientsToBccSetting.ToRecipient : senderMailAddress;
             if (displayNameAndRecipient.To.Count == 0)
@@ -1798,7 +1798,7 @@ namespace OutlookOkan.Models
             }
 
             var targetMailRecipientsIndex = new List<MailItemsRecipientAndMailAddress>();
-            //元からBccの宛先には何もしない。
+            // Không làm gì với những người nhận vốn đã ở trong Bcc.
             foreach (var recipient in displayNameAndRecipient.MailRecipientsIndex.Where(recipient => recipient.Type != (int)Outlook.OlMailRecipientType.olBCC))
             {
                 var isExternal = true;
@@ -1816,14 +1816,14 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// 宛先と添付ファイル名の紐づけなどを確認する。
+        /// Kiểm tra mối liên kết giữa người nhận và tên tệp đính kèm.
         /// </summary>
         /// <param name="checkList">CheckList</param>
-        /// <param name="isAttachmentsProhibited">添付ファイル付きのメールを送信を禁止するか否か</param>
-        /// <param name="isWarningWhenAttachedRealFile">実ファイルが添付されている場合、リンクとして添付を推奨する旨の警告を表示する否か</param>
-        /// <param name="attachmentProhibitedRecipientsList">添付ファイル禁止宛先設定</param>
-        /// <param name="recipientsAndAttachmentsNameList">宛先と添付ファイル名の紐づけ設定</param>
-        /// <param name="attachmentAlertRecipientsList">添付ファイル警告宛先と警告文設定</param>
+        /// <param name="isAttachmentsProhibited">Có cấm gửi email có tệp đính kèm hay không</param>
+        /// <param name="isWarningWhenAttachedRealFile">Nếu tệp thực được đính kèm, có hiển thị cảnh báo khuyến nghị đính kèm dưới dạng liên kết hay không</param>
+        /// <param name="attachmentProhibitedRecipientsList">Cài đặt người nhận bị cấm gửi tệp đính kèm</param>
+        /// <param name="recipientsAndAttachmentsNameList">Cài đặt liên kết giữa người nhận và tên tệp đính kèm</param>
+        /// <param name="attachmentAlertRecipientsList">Cài đặt người nhận cảnh báo tệp đính kèm và nội dung cảnh báo</param>
         /// <returns>CheckList</returns>
         private CheckList CheckRecipientsAndAttachments(CheckList checkList, bool isAttachmentsProhibited, bool isWarningWhenAttachedRealFile, IReadOnlyCollection<AttachmentProhibitedRecipients> attachmentProhibitedRecipientsList, IReadOnlyCollection<RecipientsAndAttachmentsName> recipientsAndAttachmentsNameList, IReadOnlyCollection<AttachmentAlertRecipients> attachmentAlertRecipientsList)
         {
@@ -1834,7 +1834,7 @@ namespace OutlookOkan.Models
                 checkList.IsCanNotSendMail = true;
                 checkList.CanNotSendMailMessage = Resources.AttachmentsProhibitedMessage;
 
-                //添付ファイル付きメールの送信が禁止されているため、これ以上何もしない。
+                // Vì việc gửi email có tệp đính kèm bị cấm, không làm gì thêm.
                 return checkList;
             }
 
@@ -1871,7 +1871,7 @@ namespace OutlookOkan.Models
                 {
                     checkList.CanNotSendMailMessage = Resources.AttachmentProhibitedRecipientsMessage + "：" + prohibitedRecipients;
 
-                    //添付ファイル付きメールの送付が禁止された宛先のため、これ以上何もしない。
+                    // Vì đây là người nhận bị cấm gửi tệp đính kèm, không làm gì thêm.
                     return checkList;
                 }
             }
@@ -1937,12 +1937,12 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// 連絡先(アドレス帳)に登録された宛先にあらかじめチェックする。
+        /// Tự động đánh dấu kiểm tra trước cho các người nhận đã đăng ký trong Danh bạ (Sổ địa chỉ).
         /// </summary>
         /// <param name="checkList">CheckList</param>
-        /// <param name="displayNameAndRecipient">宛先アドレスと名称</param>
-        /// <param name="contactsList">連絡先(アドレス帳)</param>
-        /// <param name="isAutoCheckRegisteredInContacts">連絡先(アドレス帳)に登録された宛先にあらかじめチェックを入れるか否か</param>
+        /// <param name="displayNameAndRecipient">Cài đặt tên hiển thị và địa chỉ</param>
+        /// <param name="contactsList">Danh bạ (Sổ địa chỉ)</param>
+        /// <param name="isAutoCheckRegisteredInContacts">Có tự động đánh dấu kiểm tra cho người nhận đã đăng ký trong danh bạ hay không</param>
         /// <returns>CheckList</returns>
         private CheckList AutoCheckRegisteredItemsInContacts(CheckList checkList, DisplayNameAndRecipient displayNameAndRecipient, IEnumerable<string> contactsList, bool isAutoCheckRegisteredInContacts)
         {
@@ -1970,14 +1970,14 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// 連絡先(アドレス帳)未登録の宛先に対し、警告を表示したり送信をブロックしたりする。
+        /// Hiển thị cảnh báo hoặc chặn gửi đối với người nhận chưa đăng ký trong Danh bạ (Sổ địa chỉ).
         /// </summary>
         /// <param name="checkList">CheckList</param>
-        /// <param name="displayNameAndRecipient">宛先アドレスと名称</param>
-        /// <param name="contactsList">連絡先(アドレス帳)</param>
-        /// <param name="internalDomainList">内部ドメイン</param>
-        /// <param name="isWarningIfRecipientsIsNotRegistered">連絡先(アドレス帳)未登録の宛先に警告を表示するか否か</param>
-        /// <param name="isProhibitsSendingMailIfRecipientsIsNotRegistered">連絡先(アドレス帳)未登録の宛先が存在する場合、メールの送信を禁止するか否か</param>
+        /// <param name="displayNameAndRecipient">Cài đặt tên hiển thị và địa chỉ</param>
+        /// <param name="contactsList">Danh bạ (Sổ địa chỉ)</param>
+        /// <param name="internalDomainList">Tên miền nội bộ</param>
+        /// <param name="isWarningIfRecipientsIsNotRegistered">Có hiển thị cảnh báo cho người nhận chưa đăng ký hay không</param>
+        /// <param name="isProhibitsSendingMailIfRecipientsIsNotRegistered">Có cấm gửi mail nếu tồn tại người nhận chưa đăng ký hay không</param>
         /// <returns>CheckList</returns>
         private CheckList AddAlertOrProhibitsSendingMailIfIfRecipientsIsNotRegistered(CheckList checkList, DisplayNameAndRecipient displayNameAndRecipient, IEnumerable<string> contactsList, IReadOnlyCollection<InternalDomain> internalDomainList, bool isWarningIfRecipientsIsNotRegistered, bool isProhibitsSendingMailIfRecipientsIsNotRegistered)
         {
@@ -1987,7 +1987,7 @@ namespace OutlookOkan.Models
 
             foreach (var to in displayNameAndRecipient.To.Where(to => !selectedContactsList.Contains(to.Key)))
             {
-                //内部ドメインは対象外
+                // Không áp dụng cho tên miền nội bộ
                 if (internalDomainList.Any(internalDomain => to.Key.EndsWith(internalDomain.Domain))) continue;
 
                 if (isProhibitsSendingMailIfRecipientsIsNotRegistered)
@@ -2002,7 +2002,7 @@ namespace OutlookOkan.Models
 
             foreach (var cc in displayNameAndRecipient.Cc.Where(cc => !selectedContactsList.Contains(cc.Key)))
             {
-                //内部ドメインは対象外
+                // Không áp dụng cho tên miền nội bộ
                 if (internalDomainList.Any(internalDomain => cc.Key.EndsWith(internalDomain.Domain))) continue;
 
                 if (isProhibitsSendingMailIfRecipientsIsNotRegistered)
@@ -2017,7 +2017,7 @@ namespace OutlookOkan.Models
 
             foreach (var bcc in displayNameAndRecipient.Bcc.Where(bcc => !selectedContactsList.Contains(bcc.Key)))
             {
-                //内部ドメインは対象外
+                // Không áp dụng cho tên miền nội bộ
                 if (internalDomainList.Any(internalDomain => bcc.Key.EndsWith(internalDomain.Domain))) continue;
 
                 if (isProhibitsSendingMailIfRecipientsIsNotRegistered)
@@ -2034,11 +2034,11 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// 本文のプレビューに文言を追加する。(この時点で、実際のメール文面には追加しない。※送信をキャンセルする可能性があるため)
+        /// Thêm văn bản vào bản xem trước nội dung. (Tại thời điểm này, chưa thêm vào nội dung thư thực tế. *Vì có khả năng việc gửi sẽ bị hủy)
         /// </summary>
-        /// <param name="mailBody">メール本文(テキスト形式)</param>
+        /// <param name="mailBody">Nội dung thư (định dạng văn bản)</param>
         /// <param name="autoAddMessageSetting">autoAddMessageSetting</param>
-        /// <returns>メール本文(テキスト形式)</returns>
+        /// <returns>Nội dung thư (định dạng văn bản)</returns>
         private string AddMessageToBodyPreview(string mailBody, AutoAddMessage autoAddMessageSetting)
         {
             if (mailBody == Resources.FailedToGetInformation) return mailBody;
@@ -2059,12 +2059,12 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// 警告を追加する。
+        /// Thêm cảnh báo.
         /// </summary>
-        /// <param name="alertMessage">警告文</param>
-        /// <param name="isImportant">重要か否か</param>
-        /// <param name="isWhite">一旦未使用</param>
-        /// <param name="isChecked">既定のチェック有無</param>
+        /// <param name="alertMessage">Nội dung cảnh báo</param>
+        /// <param name="isImportant">Có quan trọng hay không</param>
+        /// <param name="isWhite">Tạm thời chưa sử dụng</param>
+        /// <param name="isChecked">Có tự động kiểm tra hay không</param>
         private void AddAlerts(string alertMessage, bool isImportant, bool isWhite, bool isChecked)
         {
             _checkList.Alerts.Add(new Alert
@@ -2079,10 +2079,10 @@ namespace OutlookOkan.Models
         #region Tools
 
         /// <summary>
-        /// メールアドレスか否か判定する。
+        /// Xác định xem có phải là địa chỉ email hay không.
         /// </summary>
-        /// <param name="emailAddress">判定したい文字列</param>
-        /// <returns>メールアドレスか否か</returns>
+        /// <param name="emailAddress">Chuỗi ký tự cần xác định</param>
+        /// <returns>Có phải là địa chỉ email hay không</returns>
         private bool IsValidEmailAddress(string emailAddress)
         {
             if (string.IsNullOrWhiteSpace(emailAddress)) return false;
@@ -2114,10 +2114,10 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// 連絡先に登録されているアドレスをすべて取得する。
+        /// Lấy tất cả địa chỉ đã đăng ký trong danh bạ.
         /// </summary>
-        /// <param name="contacts">連絡先フォルダ</param>
-        /// <returns>連絡先に登録されているアドレスのリスト</returns>
+        /// <param name="contacts">Thư mục danh bạ</param>
+        /// <returns>Danh sách địa chỉ đã đăng ký trong danh bạ</returns>
         private List<string> MakeContactsList(Outlook.MAPIFolder contacts)
         {
             if (contacts is null) return null;
@@ -2155,7 +2155,7 @@ namespace OutlookOkan.Models
                     {
                         contactsList.Add(foundContact.Email1Address);
                         if (IsValidEmailAddress(foundContact.Email1Address)) continue;
-                        //登録アドレスがメールアドレスでない場合、ExchangeのCN(X.500)の可能性があるため、一般的なメールアドレスに変換したものも併せて登録する。
+                        // Nếu địa chỉ đã đăng ký không phải là địa chỉ email, có khả năng đó là CN(X.500) của Exchange, vì vậy hãy đăng ký cả địa chỉ đã chuyển đổi sang email thông thường.
                         var exchangePrimarySmtpAddress = GetExchangePrimarySmtpAddress(foundContact.Email1Address);
                         if (!(exchangePrimarySmtpAddress is null))
                         {
@@ -2166,7 +2166,7 @@ namespace OutlookOkan.Models
                     {
                         contactsList.Add(foundContact.Email2Address);
                         if (IsValidEmailAddress(foundContact.Email2Address)) continue;
-                        //登録アドレスがメールアドレスでない場合、ExchangeのCN(X.500)の可能性があるため、一般的なメールアドレスに変換したものも併せて登録する。
+                        // Nếu địa chỉ đã đăng ký không phải là địa chỉ email, có khả năng đó là CN(X.500) của Exchange, vì vậy hãy đăng ký cả địa chỉ đã chuyển đổi sang email thông thường.
                         var exchangePrimarySmtpAddress = GetExchangePrimarySmtpAddress(foundContact.Email2Address);
                         if (!(exchangePrimarySmtpAddress is null))
                         {
@@ -2177,7 +2177,7 @@ namespace OutlookOkan.Models
                     {
                         contactsList.Add(foundContact.Email3Address);
                         if (IsValidEmailAddress(foundContact.Email3Address)) continue;
-                        //登録アドレスがメールアドレスでない場合、ExchangeのCN(X.500)の可能性があるため、一般的なメールアドレスに変換したものも併せて登録する。
+                        // Nếu địa chỉ đã đăng ký không phải là địa chỉ email, có khả năng đó là CN(X.500) của Exchange, vì vậy hãy đăng ký cả địa chỉ đã chuyển đổi sang email thông thường.
                         var exchangePrimarySmtpAddress = GetExchangePrimarySmtpAddress(foundContact.Email3Address);
                         if (!(exchangePrimarySmtpAddress is null))
                         {
@@ -2192,10 +2192,10 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// X500形式のアドレスを一般的なメールアドレスに変換する。
+        /// Chuyển đổi địa chỉ định dạng X500 sang địa chỉ email thông thường.
         /// </summary>
-        /// <param name="x500">x500形式のアドレス</param>
-        /// <returns>一般的なメールアドレス</returns>
+        /// <param name="x500">Địa chỉ định dạng X500</param>
+        /// <returns>Địa chỉ email thông thường</returns>
         private string GetExchangePrimarySmtpAddress(string x500)
         {
             if (string.IsNullOrEmpty(x500)) return null;
@@ -2244,10 +2244,10 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// メールアドレスがX500形式か否かを判定する
+        /// Xác định xem địa chỉ email có phải là định dạng X500 hay không
         /// </summary>
-        /// <param name="emailAddress">メールアドレス</param>
-        /// <returns>X500形式か否か</returns>
+        /// <param name="emailAddress">Địa chỉ email</param>
+        /// <returns>Có phải định dạng X500 hay không</returns>
         private bool IsX500Address(string emailAddress)
         {
             const string x500Pattern = @"^/o=.*/ou=.*/cn=.*";

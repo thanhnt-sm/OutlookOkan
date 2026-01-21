@@ -6,15 +6,15 @@ using System.Text.RegularExpressions;
 namespace OutlookOkan.Handlers
 {
     /// <summary>
-    /// メールヘッダの解析を行う
+    /// Thực hiện phân tích tiêu đề email
     /// </summary>
     internal static class MailHeaderHandler
     {
         /// <summary>
-        /// メールヘッダを解析し、SPF、DKIM、DMARCなどの検証結果を返す
+        /// Phân tích tiêu đề email và trả về kết quả xác minh như SPF, DKIM, DMARC
         /// </summary>
-        /// <param name="emailHeader">メールヘッダ</param>
-        /// <returns>解析結果</returns>
+        /// <param name="emailHeader">Tiêu đề email</param>
+        /// <returns>Kết quả phân tích</returns>
         internal static Dictionary<string, string> ValidateEmailHeader(string emailHeader)
         {
             var results = new Dictionary<string, string>
@@ -60,7 +60,7 @@ namespace OutlookOkan.Handlers
                 results["From Domain"] = fromDomain;
             }
 
-            // SPF検証
+            // Xác minh SPF
             var spfRegex = new Regex(@"Received-SPF:\s*(?<result>pass|fail|softfail|neutral|temperror|permerror|none).*\b(does\s+not\s+)?designate[s]?\s+(?<ip>[^ ]+)\s+as", RegexOptions.IgnoreCase | RegexOptions.Singleline);
             var spfMatch = spfRegex.Match(emailHeader);
             if (spfMatch.Success)
@@ -69,7 +69,7 @@ namespace OutlookOkan.Handlers
                 results["SPF IP"] = spfMatch.Groups["ip"].Value;
             }
 
-            // SPFアライメント検証
+            // Xác minh SPF Alignment
             var returnPathRegex = new Regex(@"Return-Path:\s*.*@(?<domain>[^\s>]+)");
             var returnPathMatch = returnPathRegex.Match(emailHeader);
             if (returnPathMatch.Success && fromDomain != string.Empty)
@@ -79,7 +79,7 @@ namespace OutlookOkan.Handlers
                 results["SPF Alignment"] = returnPathDomain.Equals(fromDomain, StringComparison.OrdinalIgnoreCase) || returnPathDomain.ToLower().Contains(fromDomain.ToLower()) || fromDomain.ToLower().Contains(returnPathDomain.ToLower()) ? "PASS" : "FAIL";
             }
 
-            // DKIM検証
+            // Xác minh DKIM
             var dkimRegex = new Regex(@"Authentication-Results:.*?dkim=(?<result>pass|policy|fail|softfail|hardfail|neutral|temperror|permerror|none).*?header.d=(?<domain>[^(;| )]+)", RegexOptions.IgnoreCase | RegexOptions.Singleline);
             var dkimMatch = dkimRegex.Match(emailHeader);
             if (dkimMatch.Success)
@@ -87,7 +87,7 @@ namespace OutlookOkan.Handlers
                 results["DKIM"] = dkimMatch.Groups["result"].Value.ToUpper();
             }
 
-            // DKIMアライメント検証
+            // Xác minh DKIM Alignment
             var dkimSignatureRegex = new Regex(@"DKIM-Signature:.*?d=(?<domain>[^(;| )]+)", RegexOptions.IgnoreCase | RegexOptions.Singleline);
             var dkimMatches = dkimSignatureRegex.Matches(emailHeader);
             var dkimAlignmentPass = false;
@@ -109,7 +109,7 @@ namespace OutlookOkan.Handlers
             results["DKIM Domain"] = string.Join(", ", dkimDomains);
             results["DKIM Alignment"] = dkimAlignmentPass ? "PASS" : "FAIL";
 
-            // DMARC検証
+            // Xác minh DMARC
             var dmarcRegex = new Regex(@"Authentication-Results:.*?dmarc=(?<result>pass|bestguesspass|softfail|fail|none)", RegexOptions.IgnoreCase | RegexOptions.Singleline);
             var dmarcMatch = dmarcRegex.Match(emailHeader);
             if (dmarcMatch.Success)
@@ -121,13 +121,13 @@ namespace OutlookOkan.Handlers
         }
 
         /// <summary>
-        /// DMARCの検証結果を独自判定する
+        /// Tự xác định kết quả xác minh DMARC
         /// </summary>
         /// <param name="spfResult"></param>
         /// <param name="spfAlignmentResult"></param>
         /// <param name="dkimResult"></param>
         /// <param name="dkimAlignmentResult"></param>
-        /// <returns>DMARCの検証結果</returns>
+        /// <returns>Kết quả xác minh DMARC</returns>
         public static string DetermineDmarcResult(string spfResult, string spfAlignmentResult, string dkimResult, string dkimAlignmentResult)
         {
             if (string.IsNullOrEmpty(spfResult) || string.IsNullOrEmpty(spfAlignmentResult) || string.IsNullOrEmpty(dkimResult) || string.IsNullOrEmpty(dkimAlignmentResult))
@@ -135,7 +135,7 @@ namespace OutlookOkan.Handlers
                 return "FAIL";
             }
 
-            // NONEはFAILとして扱う
+            // Coi NONE là FAIL
             spfResult = spfResult.ToUpper() == "NONE" ? "FAIL" : spfResult.ToUpper();
             spfAlignmentResult = spfAlignmentResult.ToUpper() == "NONE" ? "FAIL" : spfAlignmentResult.ToUpper();
             dkimResult = dkimResult.ToUpper() == "NONE" ? "FAIL" : dkimResult.ToUpper();
@@ -143,50 +143,50 @@ namespace OutlookOkan.Handlers
 
             var key = $"{spfResult}_{spfAlignmentResult}_{dkimResult}_{dkimAlignmentResult}";
 
-            //SPF認証_SPFアライメント_DKIM認証_DKIMアライメント
+            //Xác thực SPF_SPF Alignment_Xác thực DKIM_DKIM Alignment
             var dmarcResults = new Dictionary<string, string>
             {
-                { "PASS_PASS_PASS_PASS", "PASS" }, // 両方の認証とアライメントが成功
-                { "PASS_PASS_PASS_FAIL", "PASS" }, // SPFの認証とアライメントが成功、DKIMの認証が成功
-                { "PASS_PASS_FAIL_PASS", "PASS" }, // SPFの認証とアライメントが成功、DKIMのアライメントが成功
-                { "PASS_PASS_FAIL_FAIL", "PASS" }, // SPFの認証とアライメントが成功
-                { "PASS_FAIL_PASS_PASS", "PASS" }, // SPFの認証が成功、DKIMの認証とアライメントが成功
-                { "FAIL_PASS_PASS_PASS", "PASS" }, // SPFのアライメントが成功、DKIMの認証とアライメントが成功
-                { "FAIL_FAIL_PASS_PASS", "PASS" }, // DKIMの認証とアライメントが成功
+                { "PASS_PASS_PASS_PASS", "PASS" }, // Cả xác thực và alignment đều thành công
+                { "PASS_PASS_PASS_FAIL", "PASS" }, // Xác thực SPF và alignment thành công, xác thực DKIM thành công
+                { "PASS_PASS_FAIL_PASS", "PASS" }, // Xác thực SPF và alignment thành công, alignment DKIM thành công
+                { "PASS_PASS_FAIL_FAIL", "PASS" }, // Xác thực SPF và alignment thành công
+                { "PASS_FAIL_PASS_PASS", "PASS" }, // Xác thực SPF thành công, xác thực DKIM và alignment thành công
+                { "FAIL_PASS_PASS_PASS", "PASS" }, // Alignment SPF thành công, xác thực DKIM và alignment thành công
+                { "FAIL_FAIL_PASS_PASS", "PASS" }, // Xác thực DKIM và alignment thành công
                 
-                { "PASS_FAIL_PASS_FAIL", "FAIL" }, // SPFの認証が成功、DKIMの認証が成功
-                { "PASS_FAIL_FAIL_PASS", "FAIL" }, // SPFの認証が成功、DKIMのアライメントが成功
-                { "PASS_FAIL_FAIL_FAIL", "FAIL" }, // SPFの認証が成功
-                { "FAIL_PASS_PASS_FAIL", "FAIL" }, // SPFのアライメントが成功、DKIMの認証が成功
-                { "FAIL_PASS_FAIL_PASS", "FAIL" }, // SPFのアライメントが成功、DKIMのアライメントが成功
-                { "FAIL_PASS_FAIL_FAIL", "FAIL" }, // SPFのアライメントが成功
-                { "FAIL_FAIL_PASS_FAIL", "FAIL" }, // DKIMの認証が成功
-                { "FAIL_FAIL_FAIL_PASS", "FAIL" }, // DKIMのアライメントが成功
-                { "FAIL_FAIL_FAIL_FAIL", "FAIL" }  // すべて失敗
+                { "PASS_FAIL_PASS_FAIL", "FAIL" }, // Xác thực SPF thành công, xác thực DKIM thành công
+                { "PASS_FAIL_FAIL_PASS", "FAIL" }, // Xác thực SPF thành công, alignment DKIM thành công
+                { "PASS_FAIL_FAIL_FAIL", "FAIL" }, // Xác thực SPF thành công
+                { "FAIL_PASS_PASS_FAIL", "FAIL" }, // Alignment SPF thành công, xác thực DKIM thành công
+                { "FAIL_PASS_FAIL_PASS", "FAIL" }, // Alignment SPF thành công, alignment DKIM thành công
+                { "FAIL_PASS_FAIL_FAIL", "FAIL" }, // Alignment SPF thành công
+                { "FAIL_FAIL_PASS_FAIL", "FAIL" }, // Xác thực DKIM thành công
+                { "FAIL_FAIL_FAIL_PASS", "FAIL" }, // Alignment DKIM thành công
+                { "FAIL_FAIL_FAIL_FAIL", "FAIL" }  // Tất cả đều thất bại
             };
             return dmarcResults.TryGetValue(key, out var result) ? result : "FAIL";
         }
 
         /// <summary>
-        /// 内部メールか否かの判定
+        /// Xác định xem có phải là email nội bộ hay không
         /// </summary>
-        /// <param name="emailHeader">メールヘッダ</param>
-        /// <returns>判定結果</returns>
+        /// <param name="emailHeader">Tiêu đề email</param>
+        /// <returns>Kết quả xác định</returns>
         internal static bool IsInternalMail(string emailHeader)
         {
-            // Receivedヘッダをすべて取得
+            // Lấy tất cả các tiêu đề Received
             var receivedRegex = new Regex(@"^Received:.*", RegexOptions.Multiline);
             var matches = receivedRegex.Matches(emailHeader);
 
             var receivedHeaders = (from Match match in matches select match.Value).ToList();
 
-            // 受信ヘッダの数が多い場合は外部メールと判定
+            // Nếu số lượng tiêu đề nhận được nhiều, xác định là email bên ngoài
             if (receivedHeaders.Count > 3)
             {
                 return false;
             }
 
-            // 受信ヘッダが複数ある場合、連続したドメイン名が一致するかどうかを確認
+            // Nếu có nhiều tiêu đề nhận, kiểm tra xem tên miền liên tiếp có khớp nhau không
             var domainRegex = new Regex(@"from\s([^\s]+)", RegexOptions.IgnoreCase);
             string previousDomain = null;
 

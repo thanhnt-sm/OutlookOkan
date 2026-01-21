@@ -91,10 +91,10 @@ namespace OutlookOkan
         }
 
         /// <summary>
-        /// リボンの多言語化処理
+        /// Xử lý đa ngôn ngữ cho Ribbon
         /// </summary>
-        /// <param name="control"></param>
-        /// <returns></returns>
+        /// <param name="control">Control</param>
+        /// <returns>Nhãn hiển thị</returns>
         public string GetLabel(Office.IRibbonControl control)
         {
             string result = null;

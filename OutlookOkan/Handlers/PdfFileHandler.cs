@@ -8,7 +8,7 @@ namespace OutlookOkan.Handlers
     {
         internal static bool CheckPdfIsEncrypted(string filePath)
         {
-            //リンクとして添付の場合、実ファイルが存在しない場合がある。
+            // Nếu đính kèm dưới dạng liên kết, tệp thực tế có thể không tồn tại.
             if (!File.Exists(filePath)) return false;
 
             try

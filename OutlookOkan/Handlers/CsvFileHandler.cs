@@ -21,7 +21,7 @@ namespace OutlookOkan.Handlers
         };
 
         /// <summary>
-        /// 設定ファイル(CSV)の設置個所は下記で固定。
+        /// Vị trí tệp cấu hình (CSV) được cố định như sau.
         /// C:\Users\USERNAME\AppData\Roaming\Noraneko\OutlookOkan\
         /// </summary>
         private static readonly string DirectoryPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Noraneko\\OutlookOkan\\");

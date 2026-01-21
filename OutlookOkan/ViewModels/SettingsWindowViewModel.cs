@@ -17,7 +17,7 @@ namespace OutlookOkan.ViewModels
     {
         internal SettingsWindowViewModel()
         {
-            //Add button command.
+            // Thêm lệnh cho nút.
             ImportWhiteList = new RelayCommand(ImportWhiteListFromCsv);
             ExportWhiteList = new RelayCommand(ExportWhiteListToCsv);
 
@@ -66,11 +66,11 @@ namespace OutlookOkan.ViewModels
             ImportAutoDeleteRecipientsList = new RelayCommand(ImportAutoDeleteRecipientsFromCsv);
             ExportAutoDeleteRecipientsList = new RelayCommand(ExportAutoDeleteRecipientsToCsv);
 
-            //Load language code and name.
+            // Tải mã ngôn ngữ và tên ngôn ngữ.
             var languages = new Languages();
             Languages = languages.Language;
 
-            //Load settings from csv.
+            // Tải cài đặt từ csv.
             LoadGeneralSettingData();
             LoadWhitelistData();
             LoadNameAndDomainsData();
@@ -761,10 +761,10 @@ namespace OutlookOkan.ViewModels
             var list = CsvFileHandler.ReadCsv<ExternalDomainsWarningAndAutoChangeToBcc>(typeof(ExternalDomainsWarningAndAutoChangeToBccMap), "ExternalDomainsWarningAndAutoChangeToBccSetting.csv");
             if (list.Count == 0) return;
 
-            //1行しかないはずだが、2行以上あるとロード時にエラーとなる恐れがあるため、全行ロードする。
+            // Chỉ nên có 1 dòng, nhưng load tất cả các dòng vì có nguy cơ xảy ra lỗi khi load nếu có nhiều hơn 2 dòng.
             _externalDomainsWarningAndAutoChangeToBcc.AddRange(list);
 
-            //実際に使用するのは1行目の設定のみ
+            // Chỉ cài đặt ở dòng đầu tiên thực sự được sử dụng
             TargetToAndCcExternalDomainsNum = _externalDomainsWarningAndAutoChangeToBcc[0].TargetToAndCcExternalDomainsNum;
             IsWarningWhenLargeNumberOfExternalDomains = _externalDomainsWarningAndAutoChangeToBcc[0].IsWarningWhenLargeNumberOfExternalDomains;
             IsProhibitedWhenLargeNumberOfExternalDomains = _externalDomainsWarningAndAutoChangeToBcc[0].IsProhibitedWhenLargeNumberOfExternalDomains;
@@ -853,10 +853,10 @@ namespace OutlookOkan.ViewModels
             var list = CsvFileHandler.ReadCsv<AttachmentsSetting>(typeof(AttachmentsSettingMap), "AttachmentsSetting.csv");
             if (list.Count == 0) return;
 
-            //1行しかないはずだが、2行以上あるとロード時にエラーとなる恐れがあるため、全行ロードする。
+            // Chỉ nên có 1 dòng, nhưng load tất cả các dòng vì có nguy cơ xảy ra lỗi khi load nếu có nhiều hơn 2 dòng.
             _attachmentsSetting.AddRange(list);
 
-            //実際に使用するのは1行目の設定のみ
+            // Chỉ cài đặt ở dòng đầu tiên thực sự được sử dụng
             IsWarningWhenEncryptedZipIsAttached = _attachmentsSetting[0].IsWarningWhenEncryptedZipIsAttached;
             IsProhibitedWhenEncryptedZipIsAttached = _attachmentsSetting[0].IsProhibitedWhenEncryptedZipIsAttached;
             IsEnableAllAttachedFilesAreDetectEncryptedZip = _attachmentsSetting[0].IsEnableAllAttachedFilesAreDetectEncryptedZip;
@@ -1185,10 +1185,10 @@ namespace OutlookOkan.ViewModels
             var list = CsvFileHandler.ReadCsv<ForceAutoChangeRecipientsToBcc>(typeof(ForceAutoChangeRecipientsToBccMap), "ForceAutoChangeRecipientsToBcc.csv");
             if (list.Count == 0) return;
 
-            //1行しかないはずだが、2行以上あるとロード時にエラーとなる恐れがあるため、全行ロードする。
+            // Chỉ nên có 1 dòng, nhưng load tất cả các dòng vì có nguy cơ xảy ra lỗi khi load nếu có nhiều hơn 2 dòng.
             _forceAutoChangeRecipientsToBcc.AddRange(list);
 
-            //実際に使用するのは1行目の設定のみ
+            // Chỉ cài đặt ở dòng đầu tiên thực sự được sử dụng
             IsForceAutoChangeRecipientsToBcc = _forceAutoChangeRecipientsToBcc[0].IsForceAutoChangeRecipientsToBcc;
             ToRecipient = _forceAutoChangeRecipientsToBcc[0].ToRecipient;
             IsIncludeInternalDomain = _forceAutoChangeRecipientsToBcc[0].IsIncludeInternalDomain;
@@ -1258,10 +1258,10 @@ namespace OutlookOkan.ViewModels
             var list = CsvFileHandler.ReadCsv<AutoAddMessage>(typeof(AutoAddMessageMap), "AutoAddMessage.csv");
             if (list.Count == 0) return;
 
-            //1行しかないはずだが、2行以上あるとロード時にエラーとなる恐れがあるため、全行ロードする。
+            // Chỉ nên có 1 dòng, nhưng load tất cả các dòng vì có nguy cơ xảy ra lỗi khi load nếu có nhiều hơn 2 dòng.
             _autoAddMessage.AddRange(list);
 
-            //実際に使用するのは1行目の設定のみ
+            // Chỉ cài đặt ở dòng đầu tiên thực sự được sử dụng
             IsAddToStart = _autoAddMessage[0].IsAddToStart;
             IsAddToEnd = _autoAddMessage[0].IsAddToEnd;
             MessageOfAddToStart = _autoAddMessage[0].MessageOfAddToStart;
@@ -1456,7 +1456,7 @@ namespace OutlookOkan.ViewModels
 
             _securityForReceivedMail.AddRange(list);
 
-            //実際に使用するのは1行目の設定のみ
+            // Chỉ cài đặt ở dòng đầu tiên thực sự được sử dụng
             IsEnableSecurityForReceivedMail = _securityForReceivedMail[0].IsEnableSecurityForReceivedMail;
             IsEnableAlertKeywordOfSubjectWhenOpeningMailsData = _securityForReceivedMail[0].IsEnableAlertKeywordOfSubjectWhenOpeningMailsData;
             IsEnableMailHeaderAnalysis = _securityForReceivedMail[0].IsEnableMailHeaderAnalysis;
@@ -1686,10 +1686,10 @@ namespace OutlookOkan.ViewModels
             var list = CsvFileHandler.ReadCsv<GeneralSetting>(typeof(GeneralSettingMap), "GeneralSetting.csv");
             if (list.Count == 0) return;
 
-            //1行しかないはずだが、2行以上あるとロード時にエラーとなる恐れがあるため、全行ロードする。
+            // Chỉ nên có 1 dòng, nhưng load tất cả các dòng vì có nguy cơ xảy ra lỗi khi load nếu có nhiều hơn 2 dòng.
             _generalSetting.AddRange(list);
 
-            //実際に使用するのは1行目の設定のみ
+            // Chỉ cài đặt ở dòng đầu tiên thực sự được sử dụng
             IsDoNotConfirmationIfAllRecipientsAreSameDomain = _generalSetting[0].IsDoNotConfirmationIfAllRecipientsAreSameDomain;
             IsDoDoNotConfirmationIfAllWhite = _generalSetting[0].IsDoDoNotConfirmationIfAllWhite;
             IsAutoCheckIfAllRecipientsAreSameDomain = _generalSetting[0].IsAutoCheckIfAllRecipientsAreSameDomain;
@@ -1720,7 +1720,7 @@ namespace OutlookOkan.ViewModels
 
             if (_generalSetting[0].LanguageCode is null) return;
 
-            //設定ファイル内に言語設定があればそれをロードする。
+            // Nếu có cài đặt ngôn ngữ trong tệp cài đặt, hãy tải nó.
             Language.LanguageCode = _generalSetting[0].LanguageCode;
             foreach (var lang in Languages.Where(lang => lang.LanguageCode == Language.LanguageCode))
             {

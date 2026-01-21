@@ -19,7 +19,7 @@ namespace OutlookOkan.Views
 
             InitializeComponent();
 
-            //ウィンドウサイズのロード
+            // Tải kích thước cửa sổ
             if (Properties.Settings.Default.SettingsWindowWidth != 0)
             {
                 Width = Properties.Settings.Default.SettingsWindowWidth;
@@ -33,7 +33,7 @@ namespace OutlookOkan.Views
 
         private void SettingsWindow_OnClosing(object sender, CancelEventArgs e)
         {
-            //ウインドウサイズを保存
+            // Lưu kích thước cửa sổ
             Properties.Settings.Default.SettingsWindowWidth = Width;
             Properties.Settings.Default.SettingsWindowHeight = Height;
             Properties.Settings.Default.Save();
@@ -51,7 +51,7 @@ namespace OutlookOkan.Views
             }
             else
             {
-                //@のみで登録すると全てのメールアドレスが対象になるため、それを禁止。
+                // Vì nếu chỉ đăng ký "@" thì sẽ áp dụng cho tất cả địa chỉ email, nên cấm điều này.
                 if (!inputText.Equals("@")) return;
 
                 _ = MessageBox.Show(Properties.Resources.InputMailaddressOrDomain, Properties.Resources.AppName, MessageBoxButton.OK);
@@ -138,7 +138,7 @@ namespace OutlookOkan.Views
             }
             else
             {
-                //@のみで登録すると全てのメールアドレスが対象になるため、それを禁止。
+                // Vì nếu chỉ đăng ký "@" thì sẽ áp dụng cho tất cả địa chỉ email, nên cấm điều này.
                 if (!inputText.Equals("@") && !inputText.Equals(".")) return;
 
                 _ = MessageBox.Show(Properties.Resources.InputDomain, Properties.Resources.AppName, MessageBoxButton.OK);
@@ -159,7 +159,7 @@ namespace OutlookOkan.Views
                     }
                     else
                     {
-                        //@のみで登録すると全てのメールアドレスが対象になるため、それを禁止。
+                        // Vì nếu chỉ đăng ký "@" thì sẽ áp dụng cho tất cả địa chỉ email, nên cấm điều này.
                         if (!inputText.Equals("@")) return;
 
                         _ = MessageBox.Show(Properties.Resources.InputMailaddressOrDomain, Properties.Resources.AppName, MessageBoxButton.OK);
@@ -185,7 +185,7 @@ namespace OutlookOkan.Views
             }
             else
             {
-                //@のみで登録すると全てのメールアドレスが対象になるため、それを禁止。
+                // Vì nếu chỉ đăng ký "@" thì sẽ áp dụng cho tất cả địa chỉ email, nên cấm điều này.
                 if (!inputText.Equals("@")) return;
 
                 _ = MessageBox.Show(Properties.Resources.InputMailaddressOrDomain, Properties.Resources.AppName, MessageBoxButton.OK);
@@ -255,7 +255,7 @@ namespace OutlookOkan.Views
                 e.Cancel = true;
             }
         }
-        
+
         #endregion
 
         #region Buttons
@@ -309,7 +309,7 @@ namespace OutlookOkan.Views
             }
         }
 
-        //インポート
+        // Nhập
         private void ImportButton_OnClick(object sender, RoutedEventArgs e)
         {
             var openFileDialog = new OpenFileDialog
@@ -322,14 +322,14 @@ namespace OutlookOkan.Views
             {
                 try
                 {
-                    // 暗号化ZIPファイルを展開し、特定のディレクトリ内のファイルを置き換える
+                    // Giải nén tệp ZIP được mã hóa và thay thế các tệp trong thư mục cụ thể
                     var sourceZipFilePath = openFileDialog.FileName;
                     var targetDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Noraneko\\OutlookOkan\\");
                     const string password = "cWepiJ3kkc2k";
 
                     using (var zipInputStream = new ZipInputStream(File.OpenRead(sourceZipFilePath)))
                     {
-                        zipInputStream.Password = password; // パスワード設定  
+                        zipInputStream.Password = password; // Thiết lập mật khẩu
                         ZipEntry entry;
 
                         while ((entry = zipInputStream.GetNextEntry()) != null)

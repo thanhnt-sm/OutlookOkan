@@ -26,13 +26,13 @@ namespace OutlookOkan.Views
 
             InitializeComponent();
 
-            //送信遅延時間を表示(設定)欄に入れる。
+            // Nhập thời gian trễ gửi vào hộp hiển thị (thiết lập).
             DeferredDeliveryMinutesBox.Text = checkList.DeferredMinutes.ToString();
-            
-            //縦方向の最大サイズを制限
+
+            //縦方向の最大サイズを制限h thước tối đa theo chiều dọc
             MaxHeight = SystemParameters.WorkArea.Height;
 
-            //ウィンドウサイズのロード
+            // Tải kích thước cửa sổ
             if (Properties.Settings.Default.ConfirmationWindowWidth != 0)
             {
                 Width = Properties.Settings.Default.ConfirmationWindowWidth;
@@ -45,26 +45,26 @@ namespace OutlookOkan.Views
         }
 
         /// <summary>
-        /// DialogResultをBindしずらいので、コードビハインドで。
+        /// Vì việc Bind DialogResult là khó, nên thực hiện ở code-behind.
         /// </summary>
         private void SendButton_OnClick(object sender, RoutedEventArgs e)
         {
-            //送信時刻の設定
+            // Thiết lập thời gian gửi
             _ = int.TryParse(DeferredDeliveryMinutesBox.Text, out var deferredDeliveryMinutes);
 
             if (deferredDeliveryMinutes != 0)
             {
                 if (_item.DeferredDeliveryTime == new DateTime(4501, 1, 1, 0, 0, 0))
                 {
-                    //アドインの機能のみで保留時間が設定された場合
+                    // Trường hợp chỉ có thời gian hoãn được thiết lập bởi tính năng của add-in
                     _item.DeferredDeliveryTime = DateTime.Now.AddMinutes(deferredDeliveryMinutes);
                 }
                 else
                 {
-                    //アドインの機能と同時に、Outlookの標準機能でも保留時間(配信タイミング)が設定された場合
+                    // Trường hợp thời gian hoãn (thời gian gửi) được thiết lập bởi cả tính năng của add-in và tính năng chuẩn của Outlook
                     if (DateTime.Now.AddMinutes(deferredDeliveryMinutes) > _item.DeferredDeliveryTime.AddMinutes(deferredDeliveryMinutes))
                     {
-                        //[既に設定されている送信予定日時+アドインによる保留時間] が [現在日時+アドインによる保留時間] より前の日時となるため、後者を採用する。
+                        // Do [Ngày giờ gửi đã thiết lập + Thời gian hoãn bởi add-in] là trước [Ngày giờ hiện tại + Thời gian hoãn bởi add-in], nên chọn cái sau.
                         _item.DeferredDeliveryTime = DateTime.Now.AddMinutes(deferredDeliveryMinutes);
                     }
                     else
@@ -78,7 +78,7 @@ namespace OutlookOkan.Views
         }
 
         /// <summary>
-        /// DialogResultをBindしずらいので、コードビハインドで。
+        /// Vì việc Bind DialogResult là khó, nên thực hiện ở code-behind.
         /// </summary>
         private void CancelButton_OnClick(object sender, RoutedEventArgs e)
         {
@@ -86,7 +86,7 @@ namespace OutlookOkan.Views
         }
 
         /// <summary>
-        /// チェックボックスのイベント処理がやりづらかったので、コードビハインド側からViewModelのメソッドを呼び出す。
+        /// Vì việc xử lý sự kiện của checkbox là khó, nên gọi phương thức của ViewModel từ phía code-behind.
         /// </summary>
         private void ToggleButton_OnChecked(object sender, RoutedEventArgs e)
         {
@@ -95,7 +95,7 @@ namespace OutlookOkan.Views
         }
 
         /// <summary>
-        /// チェックボックスのイベント処理がやりづらかったので、コードビハインド側からViewModelのメソッドを呼び出す。
+        /// Vì việc xử lý sự kiện của checkbox là khó, nên gọi phương thức của ViewModel từ phía code-behind.
         /// </summary>
         private void ToggleButton_OnUnchecked(object sender, RoutedEventArgs e)
         {
@@ -104,7 +104,7 @@ namespace OutlookOkan.Views
         }
 
         /// <summary>
-        /// 送信遅延時間の入力ボックスを数値のみ入力に制限する。
+        /// Giới hạn hộp nhập liệu thời gian trễ gửi chỉ được nhập số.
         /// </summary>
         private void DeferredDeliveryMinutesBox_OnPreviewTextInput(object sender, TextCompositionEventArgs e)
         {
@@ -116,7 +116,7 @@ namespace OutlookOkan.Views
         }
 
         /// <summary>
-        /// 送信遅延時間の入力ボックスへのペーストを無視する。(全角数字がペーストされる恐れがあるため)
+        /// Bỏ qua việc dán vào hộp nhập liệu thời gian trễ gửi. (Vì có nguy cơ số toàn giác được dán vào)
         /// </summary>
         private void DeferredDeliveryMinutesBox_OnPreviewExecuted(object sender, ExecutedRoutedEventArgs e)
         {
@@ -130,7 +130,7 @@ namespace OutlookOkan.Views
 
         private void AlertGridMouseUpEvent_OnHandler(object sender, MouseButtonEventArgs e)
         {
-            //左クリック以外は無視する。(CurrentItemがずれる場合があるため)
+            // Bỏ qua nếu không phải chuột trái. (Vì CurrentItem có thể bị lệch)
             if (e.ChangedButton != MouseButton.Left) return;
 
             var currentItem = (Alert)AlertGrid.CurrentItem;
@@ -143,7 +143,7 @@ namespace OutlookOkan.Views
 
         private void ToGridMouseUpEvent_OnHandler(object sender, MouseButtonEventArgs e)
         {
-            //左クリック以外は無視する。(CurrentItemがずれる場合があるため)
+            // Bỏ qua nếu không phải chuột trái. (Vì CurrentItem có thể bị lệch)
             if (e.ChangedButton != MouseButton.Left) return;
 
             var currentItem = (Address)ToGrid.CurrentItem;
@@ -156,7 +156,7 @@ namespace OutlookOkan.Views
 
         private void CcGridMouseUpEvent_OnHandler(object sender, MouseButtonEventArgs e)
         {
-            //左クリック以外は無視する。(CurrentItemがずれる場合があるため)
+            // Bỏ qua nếu không phải chuột trái. (Vì CurrentItem có thể bị lệch)
             if (e.ChangedButton != MouseButton.Left) return;
 
             var currentItem = (Address)CcGrid.CurrentItem;
@@ -169,7 +169,7 @@ namespace OutlookOkan.Views
 
         private void BccGridMouseUpEvent_OnHandler(object sender, MouseButtonEventArgs e)
         {
-            //左クリック以外は無視する。(CurrentItemがずれる場合があるため)
+            // Bỏ qua nếu không phải chuột trái. (Vì CurrentItem có thể bị lệch)
             if (e.ChangedButton != MouseButton.Left) return;
 
             var currentItem = (Address)BccGrid.CurrentItem;
@@ -182,7 +182,7 @@ namespace OutlookOkan.Views
 
         private void AttachmentGridMouseUpEvent_OnHandler(object sender, MouseButtonEventArgs e)
         {
-            //左クリック以外は無視する。(CurrentItemがずれる場合があるため)
+            // Bỏ qua nếu không phải chuột trái. (Vì CurrentItem có thể bị lệch)
             if (e.ChangedButton != MouseButton.Left) return;
 
             var currentItem = (Attachment)AttachmentGrid.CurrentItem;
@@ -253,11 +253,11 @@ namespace OutlookOkan.Views
 
         private void ConfirmationWindow_OnClosing(object sender, CancelEventArgs e)
         {
-            // ウインドウサイズを保存
+            // Lưu kích thước cửa sổ
             Properties.Settings.Default.ConfirmationWindowWidth = Width;
             Properties.Settings.Default.ConfirmationWindowHeight = Height;
             Properties.Settings.Default.Save();
-            
+
             if (string.IsNullOrEmpty(_tempFilePath)) return;
 
             try

@@ -90,9 +90,9 @@ namespace OutlookOkan
         private Outlook.NameSpace _mapiNamespace;
 
         /// <summary>
-        /// Danh sách tên các folder KHÔNG cần kiểm tra bảo mật
-        /// (Calendar, Contacts, Drafts, Sent Items, v.v.)
-        /// Dùng HashSet để tìm kiếm nhanh O(1)
+        /// Danh sách tên các thư mục KHÔNG cần kiểm tra bảo mật
+        /// (Lịch, Danh bạ, Bản nháp, Mục đã gửi, v.v.)
+        /// Sử dụng HashSet để tìm kiếm nhanh O(1)
         /// </summary>
         private HashSet<string> _excludedFolderNames;
 
@@ -101,10 +101,10 @@ namespace OutlookOkan
         // =====================================================================
 
         /// <summary>
-        /// TẠO RIBBON EXTENSION
-        /// ====================
-        /// Phương thức này được gọi bởi VSTO framework để tạo các nút bấm
-        /// trên thanh Ribbon của Outlook (Settings, About, Help, Verify Header)
+        /// TẠO RIBBON EXTENSION (PHẦN MỞ RỘNG RIBBON)
+        /// ==========================================
+        /// Phương thức này được framework VSTO gọi để tạo các nút bấm
+        /// trên thanh Ribbon của Outlook (Cài đặt, Giới thiệu, Trợ giúp, Xác minh Header)
         /// </summary>
         /// <returns>Đối tượng Ribbon chứa các nút bấm</returns>
         protected override Microsoft.Office.Core.IRibbonExtensibility CreateRibbonExtensibilityObject()
@@ -379,7 +379,7 @@ namespace OutlookOkan
                         {
                             if (_securityForReceivedMail.IsShowWarningWhenDmarcNotImplemented)
                             {
-                                //DMARCがPASSでない場合、常に警告
+                                // Luôn cảnh báo nếu DMARC không phải là PASS
                                 if (analysisResults["DMARC"] != "PASS")
                                 {
                                     _ = MessageBox.Show(Properties.Resources.SpoofingRiskWaring + Environment.NewLine + Properties.Resources.SpfDkimWaring2 + Environment.NewLine + Environment.NewLine + message, Properties.Resources.Warning, MessageBoxButton.OK, MessageBoxImage.Error);
@@ -397,9 +397,9 @@ namespace OutlookOkan
                         }
                         else
                         {
-                            //「なりすまし(送信元偽装)の危険性がある場合に警告する。」機能が有効な場合、SPFやDKIM単独の確認は行わない。
+                            // Nếu tính năng "Cảnh báo khi có nguy cơ giả mạo (spoofing)" được bật, không thực hiện kiểm tra SPF hoặc DKIM riêng lẻ.
 
-                            //SPFレコードの検証に失敗した場合に警告を表示する。
+                            // Hiển thị cảnh báo nếu xác thực bản ghi SPF không thành công.
                             if (_securityForReceivedMail.IsShowWarningWhenSpfFails)
                             {
                                 if (analysisResults["SPF"] == "FAIL" || analysisResults["SPF"] == "NONE")
@@ -409,7 +409,7 @@ namespace OutlookOkan
                                 }
                             }
 
-                            //DKIMレコードの検証に失敗した場合に警告を表示する。
+                            // Hiển thị cảnh báo nếu xác thực bản ghi DKIM không thành công.
                             if (_securityForReceivedMail.IsShowWarningWhenDkimFails)
                             {
                                 if (analysisResults["DKIM"] == "FAIL")
@@ -422,7 +422,7 @@ namespace OutlookOkan
                 }
             }
 
-            //添付ファイルを開くときの警告機能
+            // Tính năng cảnh báo khi mở tệp đính kèm
             if (_securityForReceivedMail.IsEnableWarningFeatureWhenOpeningAttachments && selectedMail.Attachments.Count != 0)
             {
                 _currentMailItem.BeforeAttachmentRead -= BeforeAttachmentRead;
@@ -431,13 +431,13 @@ namespace OutlookOkan
         }
 
         /// <summary>
-        /// 添付ファイルを開く時の分析と警告
+        /// Phân tích và cảnh báo khi mở tệp đính kèm
         /// </summary>
-        /// <param name="attachment"></param>
-        /// <param name="cancel"></param>
+        /// <param name="attachment">Tệp đính kèm</param>
+        /// <param name="cancel">Hủy bỏ</param>
         private void BeforeAttachmentRead(Outlook.Attachment attachment, ref bool cancel)
         {
-            //添付ファイルを開く前の警告機能
+            // Tính năng cảnh báo trước khi mở tệp đính kèm
             if (_securityForReceivedMail.IsWarnBeforeOpeningAttachments)
             {
                 var dialogResult = MessageBox.Show(Properties.Resources.OpenAttachmentWarning1 + Environment.NewLine + Properties.Resources.OpenAttachmentWarning2 + Environment.NewLine + Environment.NewLine + attachment.FileName, Properties.Resources.OpenAttachmentWarning1, MessageBoxButton.YesNo, MessageBoxImage.Warning);
@@ -464,7 +464,7 @@ namespace OutlookOkan
                     var zipTools = new ZipFileHandler();
                     var izEncryptedZip = zipTools.CheckZipIsEncryptedAndGetIncludeExtensions(tempFilePath);
 
-                    //暗号化ZIPファイルの場合の警告
+                    // Cảnh báo trong trường hợp tệp ZIP được mã hóa
                     if (_securityForReceivedMail.IsWarnBeforeOpeningEncryptedZip && izEncryptedZip)
                     {
                         var dialogResult = MessageBox.Show(Properties.Resources.AttatchmentIsEncryptedZip + Environment.NewLine + Properties.Resources.OpenAttachmentWarning1 + Environment.NewLine + Environment.NewLine + attachment.FileName, Properties.Resources.OpenAttachmentWarning1, MessageBoxButton.YesNo, MessageBoxImage.Warning);
@@ -488,7 +488,7 @@ namespace OutlookOkan
                         }
                     }
 
-                    //Zip内にlinkファイルがある場合の警告
+                    // Cảnh báo nếu có tệp link trong file Zip
                     if (_securityForReceivedMail.IsWarnLinkFileInTheZip)
                     {
                         if (zipTools.IncludeExtensions.Contains(".lnk") || zipTools.IsContainsShortcut)
@@ -515,7 +515,7 @@ namespace OutlookOkan
                         }
                     }
 
-                    //Zip内にOneNoteファイルがある場合の警告
+                    // Cảnh báo nếu có tệp OneNote trong file Zip
                     if (_securityForReceivedMail.IsWarnOneFileInTheZip)
                     {
                         if (zipTools.IncludeExtensions.Contains(".one"))
@@ -542,7 +542,7 @@ namespace OutlookOkan
                         }
                     }
 
-                    //Zip内にマクロ付きOfficeファイルがある場合の警告
+                    // Cảnh báo nếu có tệp Office hỗ trợ macro trong file Zip
                     if (_securityForReceivedMail.IsWarnOfficeFileWithMacroInTheZip)
                     {
                         if (zipTools.IncludeExtensions.Contains(".docm") | zipTools.IncludeExtensions.Contains(".xlsm") | zipTools.IncludeExtensions.Contains(".pptm"))
@@ -570,7 +570,7 @@ namespace OutlookOkan
                     }
                 }
 
-                //Officeファイル内にマクロが含まれている場合の警告
+                // Cảnh báo nếu tệp Office có chứa macro
                 if (_securityForReceivedMail.IsWarnBeforeOpeningAttachmentsThatContainMacros)
                 {
                     if (OfficeFileHandler.CheckOfficeFileHasVbProject(tempFilePath, Path.GetExtension(attachment.FileName).ToLower()))
@@ -610,19 +610,19 @@ namespace OutlookOkan
         }
 
         /// <summary>
-        /// 送信トレイのメールアイテムを開く際の警告。
+        /// Cảnh báo khi người dùng mở một mục thư trong Hộp thư đi.
         /// </summary>
         /// <param name="inspector">Inspector</param>
         private void OpenOutboxItemInspector(Outlook.Inspector inspector)
         {
             if (!(inspector.CurrentItem is Outlook.MailItem currentItem)) return;
 
-            //送信保留中のメールのみ警告対象とする。
+            // Chỉ cảnh báo đối với các email đang chờ gửi.
             if (currentItem.Submitted)
             {
                 _ = MessageBox.Show(Properties.Resources.CanceledSendingMailMessage, Properties.Resources.CanceledSendingMail, MessageBoxButton.OK, MessageBoxImage.Warning);
 
-                //再編集のため、配信指定日時をクリアする。
+                // Xóa thời gian gửi đã định để cho phép chỉnh sửa lại.
                 currentItem.DeferredDeliveryTime = new DateTime(4501, 1, 1, 0, 0, 0);
                 currentItem.Save();
             }
@@ -897,15 +897,15 @@ namespace OutlookOkan
 
                 if (checklist.IsCanNotSendMail)
                 {
-                    //送信禁止条件に該当するため、確認画面を表示するのではなく、送信禁止画面を表示する。
-                    //このタイミングで落ちると、メールが送信されてしまうので、念のためのTry Catch。
+                    // Vì điều kiện cấm gửi được thỏa mãn, hiển thị màn hình cấm gửi thay vì màn hình xác nhận.
+                    // Nếu lỗi xảy ra ở thời điểm này, email có thể bị gửi đi, nên cần dùng Try Catch để đề phòng.
                     try
                     {
                         _ = MessageBox.Show(checklist.CanNotSendMailMessage, Properties.Resources.SendingForbid, MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                     catch (Exception ex)
                     {
-                        //Do nothing.
+                        // Không làm gì cả
                         System.Diagnostics.Debug.WriteLine($"Error showing sending forbid message: {ex}");
                     }
                     finally
@@ -917,7 +917,7 @@ namespace OutlookOkan
                 }
                 else if (IsShowConfirmationWindow(checklist))
                 {
-                    //OutlookのWindowを親として確認画面をモーダル表示。
+                    // Hiển thị màn hình xác nhận dưới dạng modal với cửa sổ Outlook làm cửa sổ cha.
                     var confirmationWindow = new ConfirmationWindow(checklist, item);
                     var activeWindow = Globals.ThisAddIn.Application.ActiveWindow();
                     var outlookHandle = new NativeMethods(activeWindow).Handle;
@@ -927,10 +927,10 @@ namespace OutlookOkan
 
                     if (dialogResult)
                     {
-                        //メール本文への文言の自動追加はメール送信時に実行する。
+                        // Tự động thêm văn bản vào thân email khi gửi email.
                         AutoAddMessageToBody(autoAddMessageSetting, item, type == typeof(Outlook.MailItem));
 
-                        //Send Mail.
+                        // Gửi Mail.
                     }
                     else
                     {
@@ -939,10 +939,10 @@ namespace OutlookOkan
                 }
                 else
                 {
-                    //メール本文への文言の自動追加はメール送信時に実行する。
+                    // Tự động thêm văn bản vào thân email khi gửi email.
                     AutoAddMessageToBody(autoAddMessageSetting, item, type == typeof(Outlook.MailItem));
 
-                    //Send Mail.
+                    // Gửi Mail.
                 }
             }
             catch (Exception e)
@@ -950,10 +950,10 @@ namespace OutlookOkan
                 var dialogResult = MessageBox.Show(Properties.Resources.IsCanNotShowConfirmation + Environment.NewLine + Properties.Resources.SendMailConfirmation + Environment.NewLine + Environment.NewLine + e.Message, Properties.Resources.IsCanNotShowConfirmation, MessageBoxButton.YesNo, MessageBoxImage.Warning);
                 if (dialogResult == MessageBoxResult.Yes)
                 {
-                    //メール本文への文言の自動追加はメール送信時に実行する。
+                    // Tự động thêm văn bản vào thân email khi gửi email.
                     AutoAddMessageToBody(autoAddMessageSetting, item, type == typeof(Outlook.MailItem));
 
-                    //Send Mail.
+                    // Gửi Mail.
                 }
                 else
                 {
@@ -963,7 +963,7 @@ namespace OutlookOkan
         }
 
         /// <summary>
-        /// 受信メールに関するセキュリティ機能の設定を読み込む
+        /// Đọc cài đặt tính năng bảo mật cho email nhận
         /// </summary>
         private void LoadSecurityForReceivedMail()
         {
@@ -987,7 +987,7 @@ namespace OutlookOkan
         }
 
         /// <summary>
-        /// 受信したメールの件名の警告対象となる設定を読み込む。
+        /// Đọc danh sách các từ khóa cảnh báo trong tiêu đề email nhận được.
         /// </summary>
         private void LoadAlertKeywordOfSubjectWhenOpeningMailsData()
         {
@@ -996,9 +996,9 @@ namespace OutlookOkan
         }
 
         /// <summary>
-        /// 一般設定を設定ファイルから読み込む。
+        /// Đọc cài đặt chung từ file cấu hình.
         /// </summary>
-        /// <param name="isLaunch">Outlookの起動時か否か</param>
+        /// <param name="isLaunch">Có phải là lúc khởi động Outlook hay không</param>
         private void LoadGeneralSetting(bool isLaunch)
         {
             var generalSetting = CsvFileHandler.ReadCsv<GeneralSetting>(typeof(GeneralSettingMap), "GeneralSetting.csv").ToList();
@@ -1038,10 +1038,10 @@ namespace OutlookOkan
         }
 
         /// <summary>
-        /// 全てのチェック対象がチェックされているか否かの判定。(ホワイトリスト登録の宛先など、事前にチェックされている場合がある)
+        /// Kiểm tra xem tất cả các mục cần kiểm tra đã được đánh dấu hay chưa. (Một số mục có thể đã được kiểm tra trước, ví dụ như địa chỉ trong whitelist)
         /// </summary>
         /// <param name="checkList">CheckList</param>
-        /// <returns>全てのチェック対象がチェックされているか否か</returns>
+        /// <returns>Tất cả các mục cần kiểm tra đã được đánh dấu hay chưa</returns>
         private bool IsAllChecked(CheckList checkList)
         {
             var isToAddressesCompleteChecked = checkList.ToAddresses.Count(x => x.IsChecked) == checkList.ToAddresses.Count;
@@ -1054,10 +1054,10 @@ namespace OutlookOkan
         }
 
         /// <summary>
-        /// 全ての宛先が内部(社内)ドメインであるか否かの判定。
+        /// Kiểm tra xem tất cả các người nhận có thuộc tên miền nội bộ (công ty) hay không.
         /// </summary>
         /// <param name="checkList">CheckList</param>
-        /// <returns>全ての宛先が内部(社内)ドメインであるか否か</returns>
+        /// <returns>Tất cả các người nhận có thuộc tên miền nội bộ hay không</returns>
         private bool IsAllRecipientsAreSameDomain(CheckList checkList)
         {
             var isAllToRecipientsAreSameDomain = checkList.ToAddresses.Count(x => !x.IsExternal) == checkList.ToAddresses.Count;
@@ -1068,50 +1068,50 @@ namespace OutlookOkan
         }
 
         /// <summary>
-        /// 送信前の確認画面の表示有無を判定。
+        /// Xác định xem có hiển thị màn hình xác nhận trước khi gửi hay không.
         /// </summary>
         /// <param name="checklist">CheckList</param>
-        /// <returns>送信前の確認画面の表示有無</returns>
+        /// <returns>Có hiển thị màn hình xác nhận hay không</returns>
         private bool IsShowConfirmationWindow(CheckList checklist)
         {
             if (checklist.RecipientExternalDomainNumAll >= 2 && _generalSetting.IsShowConfirmationToMultipleDomain)
             {
-                //全ての宛先が確認対象だが、複数のドメインが宛先に含まれる場合は確認画面を表示するオプションが有効かつその状態のため、スキップしない。
-                //他の判定より優先されるため、常に先に確認して、先にreturnする。
+                // Tất cả người nhận đều là đối tượng kiểm tra, nhưng vì tùy chọn hiển thị màn hình xác nhận khi có nhiều tên miền được bật và đang ở trạng thái đó, nên không bỏ qua.
+                // Vì ưu tiên hơn các phán đoán khác, nên luôn kiểm tra trước và return trước.
                 return true;
             }
 
             if (_generalSetting.IsDoNotConfirmationIfAllRecipientsAreSameDomain && IsAllRecipientsAreSameDomain(checklist))
             {
-                //全ての受信者が送信者と同一ドメインの場合に確認画面を表示しないオプションが有効かつその状態のためスキップ。
+                // Bỏ qua vì tùy chọn không hiển thị màn hình xác nhận khi tất cả người nhận cùng tên miền với người gửi được bật và đang ở trạng thái đó.
                 return false;
             }
 
             if (checklist.ToAddresses.Count(x => x.IsSkip) == checklist.ToAddresses.Count && checklist.CcAddresses.Count(x => x.IsSkip) == checklist.CcAddresses.Count && checklist.BccAddresses.Count(x => x.IsSkip) == checklist.BccAddresses.Count)
             {
-                //全ての宛先が確認画面スキップ対象のためスキップ。
+                // Bỏ qua vì tất cả người nhận đều thuộc đối tượng bỏ qua màn hình xác nhận.
                 return false;
             }
 
             if (_generalSetting.IsDoDoNotConfirmationIfAllWhite && IsAllChecked(checklist))
             {
-                //全てにチェックが入った状態の場合に確認画面を表示しないオプションが有効かつその状態のためスキップ。
+                // Bỏ qua vì tùy chọn không hiển thị màn hình xác nhận khi tất cả đã được đánh dấu được bật và đang ở trạng thái đó.
                 return false;
             }
 
-            //どのようなオプション条件にも該当しないため、通常通り確認画面を表示する。
+            // Không thỏa mãn bất kỳ điều kiện tùy chọn nào, vì vậy hiển thị màn hình xác nhận như bình thường.
             return true;
         }
 
         /// <summary>
-        /// メール本文へ文言を自動追加する。
+        /// Tự động thêm văn bản vào thân email.
         /// </summary>
-        /// <param name="autoAddMessageSetting">自動追加する文言の設定</param>
+        /// <param name="autoAddMessageSetting">Cài đặt văn bản tự động thêm</param>
         /// <param name="item">mailItem</param>
-        /// <param name="isMailItem">mailItemか否か</param>
+        /// <param name="isMailItem">Có phải là MailItem hay không</param>
         private void AutoAddMessageToBody(AutoAddMessage autoAddMessageSetting, object item, bool isMailItem)
         {
-            //一旦、通常のメールのみ対象とする。
+            // Tạm thời chỉ áp dụng cho email thông thường.
             if (!isMailItem) return;
 
             if (autoAddMessageSetting.IsAddToStart)
@@ -1130,10 +1130,10 @@ namespace OutlookOkan
         }
 
         /// <summary>
-        /// 受信メールの宛先を削除する。
+        /// Xóa người nhận khỏi email nhận được.
         /// </summary>
         /// <param name="recipients">mailItem.Recipients</param>
-        /// <param name="autoDeleteRecipients">対象のドメインやメールアドレス</param>
+        /// <param name="autoDeleteRecipients">Tên miền hoặc địa chỉ email cần xóa</param>
         private bool DeleteRecipients(Outlook.Recipients recipients, List<AutoDeleteRecipient> autoDeleteRecipients)
         {
             var isRemoved = false;

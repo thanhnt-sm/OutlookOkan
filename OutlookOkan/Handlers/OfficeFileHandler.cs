@@ -13,7 +13,7 @@ namespace OutlookOkan.Handlers
     {
         internal static bool CheckOfficeFileIsEncrypted(string filePath, string fileType)
         {
-            //リンクとして添付の場合、実ファイルが存在しない場合がある。
+            // Nếu đính kèm dưới dạng liên kết, tệp thực tế có thể không tồn tại.
             if (!File.Exists(filePath)) return false;
             var isEncrypted = false;
 
@@ -44,7 +44,7 @@ namespace OutlookOkan.Handlers
                     }
                     catch (Exception e)
                     {
-                        //パスワード違いの例外となった場合、パスワード付きDOCXとして判定。
+                        // Nếu xảy ra ngoại lệ sai mật khẩu, xác định là DOCX có mật khẩu.
                         isEncrypted = e.HResult == -2146822880;
                     }
                     break;
@@ -73,7 +73,7 @@ namespace OutlookOkan.Handlers
                     }
                     catch (Exception e)
                     {
-                        //パスワード違いの例外となった場合、パスワード付きXLSXとして判定。
+                        // Nếu xảy ra ngoại lệ sai mật khẩu, xác định là XLSX có mật khẩu.
                         isEncrypted = e.HResult == -2146827284;
                     }
                     break;
@@ -94,7 +94,7 @@ namespace OutlookOkan.Handlers
                     }
                     catch (Exception e)
                     {
-                        //パスワード違いの例外となった場合、パスワード付きPPTXとして判定。
+                        // Nếu xảy ra ngoại lệ sai mật khẩu, xác định là PPTX có mật khẩu.
                         isEncrypted = e.HResult == -2147467259;
                     }
                     break;
@@ -107,7 +107,7 @@ namespace OutlookOkan.Handlers
 
         internal static bool CheckOfficeFileHasVbProject(string filePath, string fileType)
         {
-            //パスワード付きの場合は開けないので何もしない。
+            // Nếu có mật khẩu thì không mở được nên không làm gì cả.
             if (CheckOfficeFileIsEncrypted(filePath, fileType)) return false;
 
             var isHasVbProject = false;

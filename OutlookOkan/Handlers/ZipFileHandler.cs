@@ -11,13 +11,13 @@ namespace OutlookOkan.Handlers
         internal bool IsContainsShortcut;
 
         /// <summary>
-        /// 暗号化ZIPファイル(パスワード付きZIP)か否かを判定する。
+        /// Xác định xem có phải là tệp ZIP được mã hóa (ZIP có mật khẩu) hay không.
         /// </summary>
-        /// <param name="filePath">確認したいファイルのフルパス</param>
-        /// <returns>暗号化ZIPか否か</returns>
+        /// <param name="filePath">Đường dẫn đầy đủ của tệp cần kiểm tra</param>
+        /// <returns>Có phải là ZIP được mã hóa hay không</returns>
         internal bool CheckZipIsEncryptedAndGetIncludeExtensions(string filePath)
         {
-            //リンクとして添付の場合、実ファイルが存在しない場合がある。
+            // Nếu đính kèm dưới dạng liên kết, tệp thực tế có thể không tồn tại.
             if (!File.Exists(filePath)) return false;
 
             var isEncrypted = false;

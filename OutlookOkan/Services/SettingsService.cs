@@ -68,12 +68,12 @@ namespace OutlookOkan.Services
             InternalDomainList = CsvFileHandler.ReadCsv<InternalDomain>(typeof(InternalDomainMap), "InternalDomainList.csv")
                 .Where(x => !string.IsNullOrEmpty(x.Domain)).ToList();
 
-            // External Domains Warning
+            // Cảnh báo tên miền bên ngoài
             ExternalDomainsWarningAndAutoChangeToBccSetting = new ExternalDomainsWarningAndAutoChangeToBcc();
             var extList = CsvFileHandler.ReadCsv<ExternalDomainsWarningAndAutoChangeToBcc>(typeof(ExternalDomainsWarningAndAutoChangeToBccMap), "ExternalDomainsWarningAndAutoChangeToBccSetting.csv");
             if (extList.Count > 0) ExternalDomainsWarningAndAutoChangeToBccSetting = extList[0];
 
-            // Attachments Setting
+            // Cài đặt tệp đính kèm
             AttachmentsSetting = new AttachmentsSetting();
             var attList = CsvFileHandler.ReadCsv<AttachmentsSetting>(typeof(AttachmentsSettingMap), "AttachmentsSetting.csv");
             if (attList.Count > 0) AttachmentsSetting = attList[0];
@@ -90,17 +90,17 @@ namespace OutlookOkan.Services
             AttachmentAlertRecipientsList = CsvFileHandler.ReadCsv<AttachmentAlertRecipients>(typeof(AttachmentAlertRecipientsMap), "AttachmentAlertRecipients.csv")
                 .Where(x => !string.IsNullOrEmpty(x.Recipient)).ToList();
 
-            // Force Auto Change To BCC
+            // Bắt buộc tự động chuyển sang BCC
             ForceAutoChangeRecipientsToBccSetting = new ForceAutoChangeRecipientsToBcc();
             var forceList = CsvFileHandler.ReadCsv<ForceAutoChangeRecipientsToBcc>(typeof(ForceAutoChangeRecipientsToBccMap), "ForceAutoChangeRecipientsToBcc.csv");
             if (forceList.Count > 0) ForceAutoChangeRecipientsToBccSetting = forceList[0];
 
-            // Auto Add Message
+            // Tự động thêm tin nhắn
             AutoAddMessageSetting = new AutoAddMessage();
             var autoMsgList = CsvFileHandler.ReadCsv<AutoAddMessage>(typeof(AutoAddMessageMap), "AutoAddMessage.csv");
             if (autoMsgList.Count > 0) AutoAddMessageSetting = autoMsgList[0];
 
-            // Auto Delete Recipient
+            // Tự động xóa người nhận
             AutoDeleteRecipients = CsvFileHandler.ReadCsv<AutoDeleteRecipient>(typeof(AutoDeleteRecipientMap), "AutoDeleteRecipientList.csv")
                 .Where(x => !string.IsNullOrEmpty(x.Recipient))
                 .ToList();
