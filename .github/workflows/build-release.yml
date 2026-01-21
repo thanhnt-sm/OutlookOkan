@@ -29,18 +29,27 @@ jobs:
     - name: Restore NuGet Packages
       run: nuget restore OutlookOkan.sln
 
-    - name: Import Signing Certificate
+    - name: Create Signing Certificate
+      id: create-cert
       run: |
-        # Import the PFX certificate using PowerShell with proper flags
-        # PersistKeySet ensures the private key is available for MSBuild signing
+        # Create a new self-signed certificate for ClickOnce manifest signing
+        $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=OutlookOkan CI Build" -CertStoreLocation "Cert:\CurrentUser\My" -KeyExportPolicy Exportable -KeySpec Signature -KeyLength 2048 -KeyAlgorithm RSA -HashAlgorithm SHA256 -NotAfter (Get-Date).AddYears(1)
+        Write-Host "Created certificate with thumbprint: $($cert.Thumbprint)"
+        
+        # Export to PFX file (no password for simplicity in CI)
         $pfxPath = "${{ github.workspace }}\OutlookOkan\OutlookOkan_TemporaryKey.pfx"
-        $password = ConvertTo-SecureString -String "" -AsPlainText -Force
-        $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($pfxPath, $password, [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::PersistKeySet -bor [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::UserKeySet)
-        $store = New-Object System.Security.Cryptography.X509Certificates.X509Store("My", [System.Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser)
-        $store.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
-        $store.Add($cert)
-        $store.Close()
-        Write-Host "Certificate imported successfully. Thumbprint: $($cert.Thumbprint)"
+        $emptyPassword = ConvertTo-SecureString -String "" -AsPlainText -Force
+        Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password $emptyPassword -Force
+        
+        # Update the csproj with the new thumbprint
+        $csprojPath = "${{ github.workspace }}\OutlookOkan\OutlookOkan.csproj"
+        $csprojContent = Get-Content $csprojPath -Raw
+        $csprojContent = $csprojContent -replace '<ManifestCertificateThumbprint>.*</ManifestCertificateThumbprint>', "<ManifestCertificateThumbprint>$($cert.Thumbprint)</ManifestCertificateThumbprint>"
+        Set-Content -Path $csprojPath -Value $csprojContent -NoNewline
+        Write-Host "Updated csproj with new thumbprint"
+        
+        # Output thumbprint for logging
+        echo "CERT_THUMBPRINT=$($cert.Thumbprint)" >> $env:GITHUB_OUTPUT
       shell: pwsh
 
     - name: Build and Publish
