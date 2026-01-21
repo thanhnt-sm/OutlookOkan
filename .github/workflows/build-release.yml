@@ -29,15 +29,82 @@ jobs:
     - name: Restore NuGet Packages
       run: nuget restore OutlookOkan.sln
 
-    - name: Build and Publish
-      run: msbuild OutlookOkan/OutlookOkan.csproj /t:Publish /p:Configuration=Release /p:Platform=AnyCPU /p:PublishDir=app.publish/ /p:SignManifests=false
+    - name: Generate Self-Signed Certificate
+      id: generate-cert
+      run: |
+        $ErrorActionPreference = "Stop"
+        Write-Host "Starting Certificate Generation..."
+        
+        # 1. Generate Certificate
+        # Use simple parameters to avoid environment issues
+        $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=OutlookOkan CI" -KeyAlgorithm RSA -KeyLength 2048 -HashAlgorithm SHA256 -CertStoreLocation "Cert:\CurrentUser\My" -NotAfter (Get-Date).AddYears(1)
+        if (-not $cert) { throw "New-SelfSignedCertificate returned null" }
+        Write-Host "Generated Certificate: $($cert.Thumbprint)"
+        
+        # 2. Export to PFX
+        $pfxPath = "${{ github.workspace }}\OutlookOkan\OutlookOkan_TemporaryKey.pfx"
+        # Ensure directory exists
+        $pfxDir = Split-Path $pfxPath
+        if (-not (Test-Path $pfxDir)) { New-Item -ItemType Directory -Force -Path $pfxDir }
+        
+        # Create empty password for PFX
+        $password = ConvertTo-SecureString -String "" -AsPlainText -Force
+        Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password $password -Force
+        if (-not (Test-Path $pfxPath)) { throw "Failed to export PFX file" }
+        Write-Host "Exported PFX to: $pfxPath"
+        
+        # 3. Update csproj
+        $csprojPath = "${{ github.workspace }}\OutlookOkan\OutlookOkan.csproj"
+        $xml = [xml](Get-Content $csprojPath)
+        
+        # Define namespace manager for msbuild
+        $ns = New-Object System.Xml.XmlNamespaceManager($xml.NameTable)
+        $ns.AddNamespace("ns", "http://schemas.microsoft.com/developer/msbuild/2003")
+        
+        # Function to update or create property
+        function Set-ProjectProperty ($name, $value) {
+            $node = $xml.SelectSingleNode("//ns:PropertyGroup/ns:$name", $ns)
+            if ($node) { 
+                $node.InnerText = $value 
+                Write-Host "Updated $name to $value"
+            } else {
+                # Fallback simple replace if XML parsing is tricky with multiple PropertyGroups
+                Write-Warning "XML Node $name not found, trying regex replace..."
+            }
+        }
+        
+        # Force these values using regex ensuring we hit the right PropertyGroup or create it
+        # Regex is safer for flat text replacement in simple CI scripts purely for the build
+        $content = Get-Content $csprojPath -Raw
+        
+        # Replace SignManifests
+        if ($content -match "<SignManifests>.*</SignManifests>") {
+            $content = $content -replace "<SignManifests>.*</SignManifests>", "<SignManifests>true</SignManifests>"
+        } else {
+             $content = $content -replace "</PropertyGroup>", "<SignManifests>true</SignManifests>`n  </PropertyGroup>"
+        }
 
-    - name: Archive Production Artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: OutlookOkan-Installer
-        path: OutlookOkan/app.publish/**
-        retention-days: 5
+        # Replace ManifestKeyFile
+        if ($content -match "<ManifestKeyFile>.*</ManifestKeyFile>") {
+            $content = $content -replace "<ManifestKeyFile>.*</ManifestKeyFile>", "<ManifestKeyFile>OutlookOkan_TemporaryKey.pfx</ManifestKeyFile>"
+        } else {
+             # Inject if missing (might be missing due to previous step removal)
+             $content = $content -replace "<SignManifests>true</SignManifests>", "<SignManifests>true</SignManifests>`n    <ManifestKeyFile>OutlookOkan_TemporaryKey.pfx</ManifestKeyFile>"
+        }
+        
+        # Replace ManifestCertificateThumbprint
+        if ($content -match "<ManifestCertificateThumbprint>.*</ManifestCertificateThumbprint>") {
+            $content = $content -replace "<ManifestCertificateThumbprint>.*</ManifestCertificateThumbprint>", "<ManifestCertificateThumbprint>$($cert.Thumbprint)</ManifestCertificateThumbprint>"
+        } else {
+             $content = $content -replace "<ManifestKeyFile>OutlookOkan_TemporaryKey.pfx</ManifestKeyFile>", "<ManifestKeyFile>OutlookOkan_TemporaryKey.pfx</ManifestKeyFile>`n    <ManifestCertificateThumbprint>$($cert.Thumbprint)</ManifestCertificateThumbprint>"
+        }
+        
+        Set-Content -Path $csprojPath -Value $content
+        Write-Host "Successfully updated csproj with signing settings"
+      shell: pwsh
+
+    - name: Build and Publish
+      run: msbuild OutlookOkan/OutlookOkan.csproj /t:Publish /p:Configuration=Release /p:Platform=AnyCPU /p:PublishDir=app.publish/ /fl /flp:logfile=msbuild.log;verbosity=detailed
 
     - name: Archive Production Artifacts
       uses: actions/upload-artifact@v4
