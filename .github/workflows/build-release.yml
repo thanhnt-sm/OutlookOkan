@@ -29,8 +29,14 @@ jobs:
     - name: Restore NuGet Packages
       run: nuget restore OutlookOkan.sln
 
-    - name: Build and Publish
-      run: msbuild OutlookOkan/OutlookOkan.csproj /t:Publish /p:Configuration=Release /p:Platform=AnyCPU /p:PublishDir=app.publish/ /p:SignManifests=false
+    - name: Build Project
+      run: msbuild OutlookOkan/OutlookOkan.csproj /t:Build /p:Configuration=Release /p:Platform=AnyCPU /p:SignManifests=false /p:GenerateManifests=false
+
+    - name: Prepare Artifacts
+      run: |
+        New-Item -ItemType Directory -Force -Path OutlookOkan/app.publish
+        Copy-Item -Path OutlookOkan/bin/Release/* -Destination OutlookOkan/app.publish/ -Recurse
+      shell: pwsh
 
     - name: Archive Production Artifacts
       uses: actions/upload-artifact@v4
