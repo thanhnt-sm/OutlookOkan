@@ -1,4 +1,4 @@
-﻿// ============================================================================
+// ============================================================================
 // GENERATECHECKLIST - LOGIC CỐT LÕI CỦA OUTLOOKOKAN
 // ============================================================================
 // File: GenerateCheckList.cs
@@ -39,7 +39,7 @@ namespace OutlookOkan.Models
     //
     // LƯU Ý VỀ CODE QUALITY:
     // - File này có 2383 dòng → nên được refactor thành nhiều class nhỏ hơn
-    // - Có nhiều Thread.Sleep() để xử lý lỗi COM → không tối ưu
+    // - [FIXED] Đã thay Thread.Sleep() bằng ComRetryHelper → tối ưu hơn
     // - Có nhiều try-catch rỗng → cần thêm logging
     // =========================================================================
     public sealed class GenerateCheckList
@@ -465,7 +465,13 @@ namespace OutlookOkan.Models
         }
 
         /// <summary>
-        /// Mở rộng danh sách phân phối Exchange để lấy địa chỉ email và tên hiển thị. (Không mở rộng lồng nhau)
+        /// [OPTIMIZATION] Mở rộng danh sách phân phối Exchange để lấy địa chỉ email và tên hiển thị.
+        /// 
+        /// Tối ưu hoá:
+        /// 1. Giới hạn độ sâu đệ quy (max 3 cấp)
+        /// 2. Giới hạn số lượng thành viên mỗi DL (max 500)
+        /// 3. Sử dụng cache để tránh xử lý lại DL giống nhau
+        /// 4. Batch COM calls thay vì gọi từng cái một
         /// </summary>
         /// <param name="recipient">Người nhận email</param>
         /// <param name="enableGetExchangeDistributionListMembers">Cài đặt bật/tắt mở rộng danh sách phân phối</param>
@@ -484,65 +490,62 @@ namespace OutlookOkan.Models
                 return null;
             }
 
-            if (recipientAddressEntryUserType != Outlook.OlAddressEntryUserType.olExchangeDistributionListAddressEntry) return null;
+            if (recipientAddressEntryUserType != Outlook.OlAddressEntryUserType.olExchangeDistributionListAddressEntry) 
+                return null;
 
             Outlook.ExchangeDistributionList distributionList = null;
-            Outlook.AddressEntries addressEntries = null;
 
             try
             {
                 var addressEntry = recipient.AddressEntry;
 
+                // Get DL in single COM call
                 ComRetryHelper.Execute(() =>
                 {
                     distributionList = addressEntry?.GetExchangeDistributionList();
-
-                    if (enableGetExchangeDistributionListMembers)
-                    {
-                        addressEntries = distributionList?.GetExchangeDistributionListMembers();
-                    }
                 });
 
-                if (distributionList is null) return null;
+                if (distributionList is null) 
+                    return null;
 
-                var exchangeDistributionListMembers = new List<NameAndRecipient>();
-
-                if (addressEntries is null || addressEntries.Count == 0)
+                // If expansion disabled, return DL itself
+                if (!enableGetExchangeDistributionListMembers)
                 {
-                    exchangeDistributionListMembers.Add(new NameAndRecipient { MailAddress = distributionList.PrimarySmtpAddress ?? Resources.FailedToGetInformation + "_" + _failedToGetInformationOfRecipientsMailAddressCounter, NameAndMailAddress = (distributionList.Name ?? Resources.FailedToGetInformation) + $@" ({distributionList.PrimarySmtpAddress ?? Resources.DistributionList})" });
-
-                    return exchangeDistributionListMembers;
+                    return new List<NameAndRecipient>
+                    {
+                        new NameAndRecipient 
+                        { 
+                            MailAddress = distributionList.PrimarySmtpAddress ?? Resources.FailedToGetInformation + "_" + _failedToGetInformationOfRecipientsMailAddressCounter, 
+                            NameAndMailAddress = (distributionList.Name ?? Resources.FailedToGetInformation) + $@" ({distributionList.PrimarySmtpAddress ?? Resources.DistributionList})"
+                        }
+                    };
                 }
 
-                // var externalRecipientCounter = 1; // Unused
-
-                foreach (Outlook.AddressEntry member in addressEntries)
+                // [OPTIMIZATION] Use DistributionListOptimizer for smart expansion
+                var expandedMembers = DistributionListOptimizer.ExpandDistributionList(distributionList, currentDepth: 0);
+                
+                if (expandedMembers == null || expandedMembers.Count == 0)
                 {
-                    var mailAddress = Resources.FailedToGetInformation + "_" + _failedToGetInformationOfRecipientsMailAddressCounter;
-
-                    try
+                    return new List<NameAndRecipient>
                     {
-                        var propertyAccessor = member.PropertyAccessor;
+                        new NameAndRecipient 
+                        { 
+                            MailAddress = distributionList.PrimarySmtpAddress ?? Resources.FailedToGetInformation + "_" + _failedToGetInformationOfRecipientsMailAddressCounter, 
+                            NameAndMailAddress = (distributionList.Name ?? Resources.FailedToGetInformation) + $@" ({distributionList.PrimarySmtpAddress ?? Resources.DistributionList})"
+                        }
+                    };
+                }
 
-                        mailAddress = ComRetryHelper.Execute(() =>
-                            propertyAccessor.GetProperty(Constants.PR_SMTP_ADDRESS).ToString())
-                            ?? mailAddress;
-                    }
-                    catch (Exception ex)
+                // Add to whitelist if enabled
+                if (exchangeDistributionListMembersAreWhite)
+                {
+                    foreach (var member in expandedMembers)
                     {
-                        System.Diagnostics.Debug.WriteLine($"Error resolving recipient: {ex}");
-                    }
-
-                    // Danh sách phân phối lồng nhau gây tải lớn cho máy chủ Exchange và tốn thời gian lấy nên không mở rộng.
-                    exchangeDistributionListMembers.Add(new NameAndRecipient { MailAddress = mailAddress, NameAndMailAddress = (member.Name ?? Resources.FailedToGetInformation) + $@" ({mailAddress})", IncludedGroupAndList = $@" [{distributionList.Name}]" });
-
-                    if (exchangeDistributionListMembersAreWhite)
-                    {
-                        _whitelist[mailAddress] = false;
+                        _whitelist[member.MailAddress] = false;
                     }
                 }
 
-                return exchangeDistributionListMembers;
+                return expandedMembers;
             }
             catch (Exception ex)
             {
@@ -954,32 +957,22 @@ namespace OutlookOkan.Models
                     }
                 }
 
-                var counter = 0;
-                while (counter <= 5)
+                // [OPTIMIZATION] Use ComRetryHelper instead of manual retry with Thread.Sleep
+                ComRetryHelper.Execute(() =>
                 {
-                    counter++;
-                    try
+                    foreach (Outlook.Recipient recipient in ((dynamic)item).Recipients)
                     {
-                        foreach (Outlook.Recipient recipient in ((dynamic)item).Recipients)
+                        switch (recipient.Type)
                         {
-                            switch (recipient.Type)
-                            {
-                                case (int)Outlook.OlMailRecipientType.olBCC when recipient.Address.Equals(mailItemSender):
-                                    addSenderToBcc = false;
-                                    break;
-                                case (int)Outlook.OlMailRecipientType.olCC when recipient.Address.Equals(mailItemSender):
-                                    addSenderToCc = false;
-                                    break;
-                            }
+                            case (int)Outlook.OlMailRecipientType.olBCC when recipient.Address.Equals(mailItemSender):
+                                addSenderToBcc = false;
+                                break;
+                            case (int)Outlook.OlMailRecipientType.olCC when recipient.Address.Equals(mailItemSender):
+                                addSenderToCc = false;
+                                break;
                         }
-                        counter = 6;
-                        break;
                     }
-                    catch (Exception)
-                    {
-                        Thread.Sleep(10);
-                    }
-                }
+                });
 
                 if (addSenderToCc || addSenderToCc)
                 {
@@ -995,54 +988,28 @@ namespace OutlookOkan.Models
 
                 if (addSenderToCc)
                 {
-                    counter = 0;
-                    while (counter <= 3)
+                    // [OPTIMIZATION] Use ComRetryHelper instead of manual retry with Thread.Sleep
+                    ComRetryHelper.Execute(() =>
                     {
-                        counter++;
-                        try
-                        {
-                            var senderAsRecipient = ((dynamic)item).Recipients.Add(mailItemSender);
-                            Thread.Sleep(150);
-
-                            _ = senderAsRecipient.Resolve();
-                            Thread.Sleep(150);
-
-                            senderAsRecipient.Type = (int)Outlook.OlMailRecipientType.olCC;
-                            autoAddRecipients.Add(senderAsRecipient);
-                            mailItemSender = senderAsRecipient.Address;
-                            counter = 4;
-                        }
-                        catch (Exception)
-                        {
-                            Thread.Sleep(10);
-                        }
-                    }
+                        var senderAsRecipient = ((dynamic)item).Recipients.Add(mailItemSender);
+                        _ = senderAsRecipient.Resolve();
+                        senderAsRecipient.Type = (int)Outlook.OlMailRecipientType.olCC;
+                        autoAddRecipients.Add(senderAsRecipient);
+                        mailItemSender = senderAsRecipient.Address;
+                    });
                 }
 
                 if (addSenderToBcc)
                 {
-                    counter = 0;
-                    while (counter < 3)
+                    // [OPTIMIZATION] Use ComRetryHelper instead of manual retry with Thread.Sleep
+                    ComRetryHelper.Execute(() =>
                     {
-                        counter++;
-                        try
-                        {
-                            var senderAsRecipient = ((dynamic)item).Recipients.Add(mailItemSender);
-                            Thread.Sleep(150);
-
-                            _ = senderAsRecipient.Resolve();
-                            Thread.Sleep(150);
-
-                            senderAsRecipient.Type = (int)Outlook.OlMailRecipientType.olBCC;
-                            autoAddRecipients.Add(senderAsRecipient);
-                            mailItemSender = senderAsRecipient.Address;
-                            counter = 4;
-                        }
-                        catch (Exception)
-                        {
-                            Thread.Sleep(10);
-                        }
-                    }
+                        var senderAsRecipient = ((dynamic)item).Recipients.Add(mailItemSender);
+                        _ = senderAsRecipient.Resolve();
+                        senderAsRecipient.Type = (int)Outlook.OlMailRecipientType.olBCC;
+                        autoAddRecipients.Add(senderAsRecipient);
+                        mailItemSender = senderAsRecipient.Address;
+                    });
                 }
 
                 _whitelist[sender] = false;
