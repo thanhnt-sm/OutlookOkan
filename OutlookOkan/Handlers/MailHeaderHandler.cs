@@ -7,9 +7,56 @@ namespace OutlookOkan.Handlers
 {
     /// <summary>
     /// Thực hiện phân tích tiêu đề email
+    /// [OPTIMIZATION] Sử dụng static compiled regex để tối ưu hiệu suất
     /// </summary>
     internal static class MailHeaderHandler
     {
+        // =====================================================================
+        // [OPTIMIZATION] Pre-compiled static regex patterns
+        // Những pattern này được compile một lần và cache để tránh
+        // tạo mới Regex object mỗi lần gọi method
+        // =====================================================================
+        
+        private static readonly Regex FromRegex = 
+            new Regex(@"^From:\s*.*(?:\r?\n\s+.*)*", 
+                RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
+        
+        private static readonly Regex DomainFromEmailRegex = 
+            new Regex(@"<.*?@(?<domain>[^\s>]+)>", 
+                RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        
+        private static readonly Regex AlternativeDomainRegex = 
+            new Regex(@"[^<\s]+@(?<domain>[^\s>]+)", 
+                RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        
+        private static readonly Regex SpfRegex = 
+            new Regex(@"Received-SPF:\s*(?<result>pass|fail|softfail|neutral|temperror|permerror|none).*\b(does\s+not\s+)?designate[s]?\s+(?<ip>[^ ]+)\s+as", 
+                RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+        
+        private static readonly Regex ReturnPathRegex = 
+            new Regex(@"Return-Path:\s*.*@(?<domain>[^\s>]+)", 
+                RegexOptions.Compiled);
+        
+        private static readonly Regex DkimRegex = 
+            new Regex(@"Authentication-Results:.*?dkim=(?<result>pass|policy|fail|softfail|hardfail|neutral|temperror|permerror|none).*?header.d=(?<domain>[^(;| )]+)", 
+                RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+        
+        private static readonly Regex DkimSignatureRegex = 
+            new Regex(@"DKIM-Signature:.*?d=(?<domain>[^(;| )]+)", 
+                RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+        
+        private static readonly Regex DmarcRegex = 
+            new Regex(@"Authentication-Results:.*?dmarc=(?<result>pass|bestguesspass|softfail|fail|none)", 
+                RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+        
+        private static readonly Regex ReceivedRegex = 
+            new Regex(@"^Received:.*", 
+                RegexOptions.Multiline | RegexOptions.Compiled);
+        
+        private static readonly Regex DomainFromReceivedRegex = 
+            new Regex(@"from\s([^\s]+)", 
+                RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
         /// <summary>
         /// Phân tích tiêu đề email và trả về kết quả xác minh như SPF, DKIM, DMARC
         /// </summary>
@@ -42,18 +89,15 @@ namespace OutlookOkan.Handlers
             }
 
             var fromDomain = string.Empty;
-            var fromRegex = new Regex(@"^From:\s*.*(?:\r?\n\s+.*)*", RegexOptions.IgnoreCase | RegexOptions.Multiline);
-            var fromMatch = fromRegex.Match(emailHeader);
+            var fromMatch = FromRegex.Match(emailHeader);
             if (fromMatch.Success)
             {
                 var fromHeader = fromMatch.Value;
-                var domainRegex = new Regex(@"<.*?@(?<domain>[^\s>]+)>", RegexOptions.IgnoreCase);
-                var domainMatch = domainRegex.Match(fromHeader);
+                var domainMatch = DomainFromEmailRegex.Match(fromHeader);
 
                 if (!domainMatch.Success)
                 {
-                    var alternativeDomainRegex = new Regex(@"[^<\s]+@(?<domain>[^\s>]+)", RegexOptions.IgnoreCase);
-                    domainMatch = alternativeDomainRegex.Match(fromHeader);
+                    domainMatch = AlternativeDomainRegex.Match(fromHeader);
                 }
 
                 fromDomain = domainMatch.Success ? domainMatch.Groups["domain"].Value : string.Empty;
@@ -61,8 +105,7 @@ namespace OutlookOkan.Handlers
             }
 
             // Xác minh SPF
-            var spfRegex = new Regex(@"Received-SPF:\s*(?<result>pass|fail|softfail|neutral|temperror|permerror|none).*\b(does\s+not\s+)?designate[s]?\s+(?<ip>[^ ]+)\s+as", RegexOptions.IgnoreCase | RegexOptions.Singleline);
-            var spfMatch = spfRegex.Match(emailHeader);
+            var spfMatch = SpfRegex.Match(emailHeader);
             if (spfMatch.Success)
             {
                 results["SPF"] = spfMatch.Groups["result"].Value.ToUpper();
@@ -70,8 +113,7 @@ namespace OutlookOkan.Handlers
             }
 
             // Xác minh SPF Alignment
-            var returnPathRegex = new Regex(@"Return-Path:\s*.*@(?<domain>[^\s>]+)");
-            var returnPathMatch = returnPathRegex.Match(emailHeader);
+            var returnPathMatch = ReturnPathRegex.Match(emailHeader);
             if (returnPathMatch.Success && fromDomain != string.Empty)
             {
                 var returnPathDomain = returnPathMatch.Groups["domain"].Value;
@@ -80,16 +122,14 @@ namespace OutlookOkan.Handlers
             }
 
             // Xác minh DKIM
-            var dkimRegex = new Regex(@"Authentication-Results:.*?dkim=(?<result>pass|policy|fail|softfail|hardfail|neutral|temperror|permerror|none).*?header.d=(?<domain>[^(;| )]+)", RegexOptions.IgnoreCase | RegexOptions.Singleline);
-            var dkimMatch = dkimRegex.Match(emailHeader);
+            var dkimMatch = DkimRegex.Match(emailHeader);
             if (dkimMatch.Success)
             {
                 results["DKIM"] = dkimMatch.Groups["result"].Value.ToUpper();
             }
 
             // Xác minh DKIM Alignment
-            var dkimSignatureRegex = new Regex(@"DKIM-Signature:.*?d=(?<domain>[^(;| )]+)", RegexOptions.IgnoreCase | RegexOptions.Singleline);
-            var dkimMatches = dkimSignatureRegex.Matches(emailHeader);
+            var dkimMatches = DkimSignatureRegex.Matches(emailHeader);
             var dkimAlignmentPass = false;
             var dkimDomains = new List<string>();
 
@@ -110,8 +150,7 @@ namespace OutlookOkan.Handlers
             results["DKIM Alignment"] = dkimAlignmentPass ? "PASS" : "FAIL";
 
             // Xác minh DMARC
-            var dmarcRegex = new Regex(@"Authentication-Results:.*?dmarc=(?<result>pass|bestguesspass|softfail|fail|none)", RegexOptions.IgnoreCase | RegexOptions.Singleline);
-            var dmarcMatch = dmarcRegex.Match(emailHeader);
+            var dmarcMatch = DmarcRegex.Match(emailHeader);
             if (dmarcMatch.Success)
             {
                 results["DMARC"] = dmarcMatch.Groups["result"].Value.ToUpper();
@@ -175,8 +214,7 @@ namespace OutlookOkan.Handlers
         internal static bool IsInternalMail(string emailHeader)
         {
             // Lấy tất cả các tiêu đề Received
-            var receivedRegex = new Regex(@"^Received:.*", RegexOptions.Multiline);
-            var matches = receivedRegex.Matches(emailHeader);
+            var matches = ReceivedRegex.Matches(emailHeader);
 
             var receivedHeaders = (from Match match in matches select match.Value).ToList();
 
@@ -187,10 +225,9 @@ namespace OutlookOkan.Handlers
             }
 
             // Nếu có nhiều tiêu đề nhận, kiểm tra xem tên miền liên tiếp có khớp nhau không
-            var domainRegex = new Regex(@"from\s([^\s]+)", RegexOptions.IgnoreCase);
             string previousDomain = null;
 
-            foreach (var currentDomain in from header in receivedHeaders select domainRegex.Match(header) into domainMatch where domainMatch.Success select ExtractMainDomain(domainMatch.Groups[1].Value))
+            foreach (var currentDomain in from header in receivedHeaders select DomainFromReceivedRegex.Match(header) into domainMatch where domainMatch.Success select ExtractMainDomain(domainMatch.Groups[1].Value))
             {
                 if (previousDomain != null && previousDomain.Equals(currentDomain, StringComparison.OrdinalIgnoreCase))
                 {

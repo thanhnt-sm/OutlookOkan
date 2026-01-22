@@ -21,10 +21,7 @@ namespace OutlookOkan.ViewModels
 
         private void GenerateAlertsCollection()
         {
-            foreach (var alert in _checkList.Alerts)
-            {
-                Alerts.Add(alert);
-            }
+            Alerts = new ObservableCollection<Alert>(_checkList.Alerts);
 
             if (Alerts.Count == 0)
             {
@@ -34,28 +31,14 @@ namespace OutlookOkan.ViewModels
 
         private void GenerateAddressesCollection()
         {
-            foreach (var address in _checkList.ToAddresses)
-            {
-                ToAddresses.Add(address);
-            }
-
-            foreach (var address in _checkList.CcAddresses)
-            {
-                CcAddresses.Add(address);
-            }
-
-            foreach (var address in _checkList.BccAddresses)
-            {
-                BccAddresses.Add(address);
-            }
+            ToAddresses = new ObservableCollection<Address>(_checkList.ToAddresses);
+            CcAddresses = new ObservableCollection<Address>(_checkList.CcAddresses);
+            BccAddresses = new ObservableCollection<Address>(_checkList.BccAddresses);
         }
 
         private void GenerateAttachmentsCollection()
         {
-            foreach (var attachment in _checkList.Attachments)
-            {
-                Attachments.Add(attachment);
-            }
+            Attachments = new ObservableCollection<Attachment>(_checkList.Attachments);
         }
 
         private void UpDateItemsCount()

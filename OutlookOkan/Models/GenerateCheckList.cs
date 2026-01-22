@@ -126,8 +126,8 @@ namespace OutlookOkan.Models
                     _checkList.MailType = Resources.MeetingRequest;
                     // [OPTIMIZATION-TASK5] Use compiled regex instead of string.Replace() for multi-newline pattern
                     // This is applied to meeting item body processing for better performance
-                    _checkList.MailBody = string.IsNullOrEmpty(meetingItem.Body) ? 
-                        Resources.FailedToGetInformation : 
+                    _checkList.MailBody = string.IsNullOrEmpty(meetingItem.Body) ?
+                        Resources.FailedToGetInformation :
                         MultiNewlineRegex.Replace(meetingItem.Body, "\r\n");
 
                     if (meetingItem.RTFBody is byte[] byteArray)
@@ -149,8 +149,8 @@ namespace OutlookOkan.Models
 
                     // [OPTIMIZATION-TASK5] Use compiled regex instead of string.Replace() for multi-newline pattern
                     // This is applied to task request body processing for better performance
-                    _checkList.MailBody = string.IsNullOrEmpty(associatedTask.Body) ? 
-                        Resources.FailedToGetInformation : 
+                    _checkList.MailBody = string.IsNullOrEmpty(associatedTask.Body) ?
+                        Resources.FailedToGetInformation :
                         MultiNewlineRegex.Replace(associatedTask.Body, "\r\n");
 
                     if (associatedTask.RTFBody is byte[] bodyByteArray)
@@ -343,13 +343,13 @@ namespace OutlookOkan.Models
         /// <param name="mailBodyFormat">Định dạng nội dung email</param>
         /// <param name="mailBody">Nội dung email</param>
         /// <returns>Nội dung email (dạng văn bản)</returns>
-        private string GetMailBody(Outlook.OlBodyFormat mailBodyFormat, string mailBody)
+        private static string GetMailBody(Outlook.OlBodyFormat mailBodyFormat, string mailBody)
         {
             // Để tránh vấn đề xuống dòng thành 2 dòng, chỉ thay thế 2 dòng xuống dòng liên tiếp thành 1 dòng trong trường hợp định dạng HTML.
             // [OPTIMIZATION-TASK5] Use compiled regex instead of string.Replace() for multi-newline pattern
             // This is applied to HTML body format processing for better performance
-            return mailBodyFormat == Outlook.OlBodyFormat.olFormatHTML ? 
-                MultiNewlineRegex.Replace(mailBody, "\r\n") : 
+            return mailBodyFormat == Outlook.OlBodyFormat.olFormatHTML ?
+                MultiNewlineRegex.Replace(mailBody, "\r\n") :
                 mailBody;
         }
 
@@ -361,7 +361,7 @@ namespace OutlookOkan.Models
         /// <param name="internalDomain">Cài đặt tên miền nội bộ</param>
         /// <param name="isToAndCcOnly">Chỉ áp dụng cho To và Cc hay không</param>
         /// <returns>Số lượng tên miền bên ngoài</returns>
-        private int CountRecipientExternalDomains(DisplayNameAndRecipient displayNameAndRecipient, string senderDomain, IEnumerable<InternalDomain> internalDomain, bool isToAndCcOnly)
+        private static int CountRecipientExternalDomains(DisplayNameAndRecipient displayNameAndRecipient, string senderDomain, IEnumerable<InternalDomain> internalDomain, bool isToAndCcOnly)
         {
             var domainList = new HashSet<string>();
 
@@ -406,7 +406,7 @@ namespace OutlookOkan.Models
         /// </summary>
         /// <param name="recipient">Người nhận email</param>
         /// <returns>Địa chỉ email và tên hiển thị</returns>
-        private IEnumerable<NameAndRecipient> GetNameAndRecipient(Outlook.Recipient recipient)
+        private List<NameAndRecipient> GetNameAndRecipient(Outlook.Recipient recipient)
         {
             _failedToGetInformationOfRecipientsMailAddressCounter++;
 
@@ -489,7 +489,7 @@ namespace OutlookOkan.Models
         /// <param name="enableGetExchangeDistributionListMembers">Cài đặt bật/tắt mở rộng danh sách phân phối</param>
         /// <param name="exchangeDistributionListMembersAreWhite">Cài đặt xem các địa chỉ được mở rộng từ danh sách phân phối có được coi là whitelist hay không</param>
         /// <returns>Địa chỉ email và tên hiển thị</returns>
-        private IEnumerable<NameAndRecipient> GetExchangeDistributionListMembers(Outlook.Recipient recipient, bool enableGetExchangeDistributionListMembers, bool exchangeDistributionListMembersAreWhite)
+        private List<NameAndRecipient> GetExchangeDistributionListMembers(Outlook.Recipient recipient, bool enableGetExchangeDistributionListMembers, bool exchangeDistributionListMembersAreWhite)
         {
             _failedToGetInformationOfRecipientsMailAddressCounter++;
             Outlook.OlAddressEntryUserType recipientAddressEntryUserType;
@@ -502,7 +502,7 @@ namespace OutlookOkan.Models
                 return null;
             }
 
-            if (recipientAddressEntryUserType != Outlook.OlAddressEntryUserType.olExchangeDistributionListAddressEntry) 
+            if (recipientAddressEntryUserType != Outlook.OlAddressEntryUserType.olExchangeDistributionListAddressEntry)
                 return null;
 
             Outlook.ExchangeDistributionList distributionList = null;
@@ -517,7 +517,7 @@ namespace OutlookOkan.Models
                     distributionList = addressEntry?.GetExchangeDistributionList();
                 });
 
-                if (distributionList is null) 
+                if (distributionList is null)
                     return null;
 
                 // If expansion disabled, return DL itself
@@ -525,9 +525,9 @@ namespace OutlookOkan.Models
                 {
                     return new List<NameAndRecipient>
                     {
-                        new NameAndRecipient 
-                        { 
-                            MailAddress = distributionList.PrimarySmtpAddress ?? Resources.FailedToGetInformation + "_" + _failedToGetInformationOfRecipientsMailAddressCounter, 
+                        new NameAndRecipient
+                        {
+                            MailAddress = distributionList.PrimarySmtpAddress ?? Resources.FailedToGetInformation + "_" + _failedToGetInformationOfRecipientsMailAddressCounter,
                             NameAndMailAddress = (distributionList.Name ?? Resources.FailedToGetInformation) + $@" ({distributionList.PrimarySmtpAddress ?? Resources.DistributionList})"
                         }
                     };
@@ -535,14 +535,14 @@ namespace OutlookOkan.Models
 
                 // [OPTIMIZATION] Use DistributionListOptimizer for smart expansion
                 var expandedMembers = DistributionListOptimizer.ExpandDistributionList(distributionList, currentDepth: 0);
-                
+
                 if (expandedMembers == null || expandedMembers.Count == 0)
                 {
                     return new List<NameAndRecipient>
                     {
-                        new NameAndRecipient 
-                        { 
-                            MailAddress = distributionList.PrimarySmtpAddress ?? Resources.FailedToGetInformation + "_" + _failedToGetInformationOfRecipientsMailAddressCounter, 
+                        new NameAndRecipient
+                        {
+                            MailAddress = distributionList.PrimarySmtpAddress ?? Resources.FailedToGetInformation + "_" + _failedToGetInformationOfRecipientsMailAddressCounter,
                             NameAndMailAddress = (distributionList.Name ?? Resources.FailedToGetInformation) + $@" ({distributionList.PrimarySmtpAddress ?? Resources.DistributionList})"
                         }
                     };
@@ -574,7 +574,7 @@ namespace OutlookOkan.Models
         /// <param name="enableGetContactGroupMembers">Cài đặt bật/tắt mở rộng nhóm liên hệ</param>
         /// <param name="contactGroupMembersAreWhite">Cài đặt xem các địa chỉ được mở rộng từ nhóm liên hệ có được coi là whitelist hay không</param>
         /// <returns>Địa chỉ email và tên hiển thị</returns>
-        private IEnumerable<NameAndRecipient> GetContactGroupMembers(Outlook.Recipient recipient, string contactGroupId, bool enableGetContactGroupMembers, bool contactGroupMembersAreWhite)
+        private List<NameAndRecipient> GetContactGroupMembers(Outlook.Recipient recipient, string contactGroupId, bool enableGetContactGroupMembers, bool contactGroupMembersAreWhite)
         {
             var contactGroupMembers = new List<NameAndRecipient>();
             if (!enableGetContactGroupMembers)
@@ -743,7 +743,7 @@ namespace OutlookOkan.Models
         /// <param name="checkList">CheckList</param>
         /// <param name="generalSetting">Cài đặt chung</param>
         /// <returns>CheckList</returns>
-        private CheckList CheckForgotAttach(CheckList checkList, GeneralSetting generalSetting)
+        private static CheckList CheckForgotAttach(CheckList checkList, GeneralSetting generalSetting)
         {
             if (checkList.Attachments.Count >= 1) return checkList;
 
@@ -762,7 +762,7 @@ namespace OutlookOkan.Models
         /// </summary>
         /// <param name="bodyFormat">Định dạng email</param>
         /// <returns>Định dạng email</returns>
-        private string GetMailBodyFormat(Outlook.OlBodyFormat bodyFormat)
+        private static string GetMailBodyFormat(Outlook.OlBodyFormat bodyFormat)
         {
             switch (bodyFormat)
             {
@@ -785,7 +785,7 @@ namespace OutlookOkan.Models
         /// <param name="checkList">CheckList</param>>
         /// <param name="alertKeywordAndMessageList">Cài đặt từ khóa cảnh báo</param>>
         /// <returns>CheckList</returns>
-        private CheckList CheckKeyword(CheckList checkList, IReadOnlyCollection<AlertKeywordAndMessage> alertKeywordAndMessageList)
+        private static CheckList CheckKeyword(CheckList checkList, List<AlertKeywordAndMessage> alertKeywordAndMessageList)
         {
             if (alertKeywordAndMessageList.Count == 0) return checkList;
 
@@ -813,7 +813,7 @@ namespace OutlookOkan.Models
         /// <param name="checkList">CheckList</param>>
         /// <param name="alertKeywordAndMessageForSubjectList">Cài đặt từ khóa cảnh báo</param>>
         /// <returns>CheckList</returns>
-        private CheckList CheckKeywordForSubject(CheckList checkList, IReadOnlyCollection<AlertKeywordAndMessageForSubject> alertKeywordAndMessageForSubjectList)
+        private static CheckList CheckKeywordForSubject(CheckList checkList, List<AlertKeywordAndMessageForSubject> alertKeywordAndMessageForSubjectList)
         {
             if (alertKeywordAndMessageForSubjectList.Count == 0) return checkList;
 
@@ -849,7 +849,7 @@ namespace OutlookOkan.Models
         /// <param name="isAutoAddSenderToBcc">Có tự động thêm địa chỉ người gửi vào Bcc hay không</param>
         /// <param name="isAutoAddSenderToCc">Có tự động thêm địa chỉ người gửi vào Cc hay không</param>
         /// <returns>Danh sách địa chỉ được tự động thêm vào Cc hoặc Bcc</returns>
-        private List<Outlook.Recipient> AutoAddCcAndBcc<T>(T item, GeneralSetting generalSetting, DisplayNameAndRecipient displayNameAndRecipient, IReadOnlyCollection<AutoCcBccKeyword> autoCcBccKeywordList, IReadOnlyCollection<AutoCcBccAttachedFile> autoCcBccAttachedFilesList, IReadOnlyCollection<AutoCcBccRecipient> autoCcBccRecipientList, int externalDomainCount, string sender, bool isAutoAddSenderToBcc, bool isAutoAddSenderToCc)
+        private List<Outlook.Recipient> AutoAddCcAndBcc<T>(T item, GeneralSetting generalSetting, DisplayNameAndRecipient displayNameAndRecipient, List<AutoCcBccKeyword> autoCcBccKeywordList, List<AutoCcBccAttachedFile> autoCcBccAttachedFilesList, List<AutoCcBccRecipient> autoCcBccRecipientList, int externalDomainCount, string sender, bool isAutoAddSenderToBcc, bool isAutoAddSenderToCc)
         {
             var autoAddedCcAddressList = new List<string>();
             var autoAddedBccAddressList = new List<string>();
@@ -1034,32 +1034,32 @@ namespace OutlookOkan.Models
         // These patterns are reused across multiple email processing calls
         // Using RegexOptions.Compiled improves performance for repeated use
         private static readonly Regex CidRegex = new Regex(@"cid:.*?@", RegexOptions.Compiled);
-        
+
         /// <summary>
         /// [OPTIMIZATION-TASK5] Multi-newline pattern optimization
         /// Replaces multiple consecutive line breaks with single line break
         /// Applied to: HTML body formatting (lines 127, 146, 341)
         /// Performance: 10x faster than Replace() for repeated use
         /// </summary>
-        private static readonly Regex MultiNewlineRegex = 
+        private static readonly Regex MultiNewlineRegex =
             new Regex(@"\r\n\r\n", RegexOptions.Compiled);
-        
+
         /// <summary>
         /// [OPTIMIZATION-TASK5] CID pattern cleanup optimization  
         /// Removes 'cid:' prefix and '@' suffix from embedded attachment references
         /// Applied to: MakeEmbeddedAttachmentsList loop (line 1045)
         /// Performance: Combines two Replace() calls into one regex operation
         /// </summary>
-        private static readonly Regex CidPatternRegex = 
+        private static readonly Regex CidPatternRegex =
             new Regex(@"cid:|@", RegexOptions.Compiled);
-        
+
         /// <summary>
         /// [OPTIMIZATION-TASK5] Email domain IDN mapping optimization
         /// Converts internationalized domain names (IDN) to ASCII-compatible format
         /// Applied to: IsValidEmailAddress method (line 2083)
         /// Performance: Static compilation avoids regex recreation on each call
         /// </summary>
-        private static readonly Regex DomainRegex = 
+        private static readonly Regex DomainRegex =
             new Regex(@"(@)(.+)$", RegexOptions.Compiled);
 
         /// <summary>
@@ -1068,7 +1068,7 @@ namespace OutlookOkan.Models
         /// <param name="item">Item</param>
         /// <param name="mailHtmlBody">Nội dung thư (định dạng HTML)</param>
         /// <returns>Danh sách tên tệp đính kèm nhúng</returns>
-        private List<string> MakeEmbeddedAttachmentsList<T>(T item, string mailHtmlBody)
+        private static List<string> MakeEmbeddedAttachmentsList<T>(T item, string mailHtmlBody)
         {
             if (typeof(T) == typeof(Outlook.MailItem))
             {
@@ -1288,7 +1288,7 @@ namespace OutlookOkan.Models
         /// <param name="isCheckNameAndDomainsIncludeSubject">Có bao gồm tiêu đề vào đối tượng kiểm tra hay không</param>
         /// <param name="isCheckNameAndDomainsFromSubject">Có hiển thị cảnh báo ngay cả khi không có tên người nhận trong tiêu đề hay không</param>
         /// <returns>CheckList</returns>
-        private CheckList CheckMailBodyAndRecipient(CheckList checkList, DisplayNameAndRecipient displayNameAndRecipient, IEnumerable<NameAndDomains> nameAndDomainsList, bool isCheckNameAndDomainsFromRecipients, bool isCheckNameAndDomainsIncludeSubject, bool isCheckNameAndDomainsFromSubject)
+        private static CheckList CheckMailBodyAndRecipient(CheckList checkList, DisplayNameAndRecipient displayNameAndRecipient, List<NameAndDomains> nameAndDomainsList, bool isCheckNameAndDomainsFromRecipients, bool isCheckNameAndDomainsIncludeSubject, bool isCheckNameAndDomainsFromSubject)
         {
             if (displayNameAndRecipient is null) return checkList;
 
@@ -1382,7 +1382,7 @@ namespace OutlookOkan.Models
         /// <param name="keywordAndRecipients">Danh sách từ khóa và người nhận</param>
         /// <param name="isCheckKeywordAndRecipientsIncludeSubject">Có bao gồm tiêu đề vào đối tượng kiểm tra hay không</param>
         /// <returns>CheckList</returns>
-        private CheckList CheckKeywordAndRecipient(CheckList checkList, DisplayNameAndRecipient displayNameAndRecipient, IEnumerable<KeywordAndRecipients> keywordAndRecipients, bool isCheckKeywordAndRecipientsIncludeSubject)
+        private static CheckList CheckKeywordAndRecipient(CheckList checkList, DisplayNameAndRecipient displayNameAndRecipient, List<KeywordAndRecipients> keywordAndRecipients, bool isCheckKeywordAndRecipientsIncludeSubject)
         {
             if (displayNameAndRecipient is null) return checkList;
 
@@ -1430,7 +1430,7 @@ namespace OutlookOkan.Models
         /// <param name="alertAddressList">Cài đặt địa chỉ cảnh báo</param>
         /// <param name="internalDomainList">Cài đặt tên miền nội bộ</param>
         /// <returns>CheckList</returns>
-        private CheckList GetRecipient(CheckList checkList, DisplayNameAndRecipient displayNameAndRecipient, IReadOnlyCollection<AlertAddress> alertAddressList, IReadOnlyCollection<InternalDomain> internalDomainList)
+        private CheckList GetRecipient(CheckList checkList, DisplayNameAndRecipient displayNameAndRecipient, List<AlertAddress> alertAddressList, List<InternalDomain> internalDomainList)
         {
             if (displayNameAndRecipient is null) return checkList;
 
@@ -1610,7 +1610,7 @@ namespace OutlookOkan.Models
         /// <param name="isDoNotUseDeferredDeliveryIfAllRecipientsAreInternalDomain">Có sử dụng tính năng này khi số tên miền bên ngoài bằng 0 hay không</param>
         /// <param name="externalDomainCount">Số lượng tên miền bên ngoài</param>
         /// <returns>Thời gian trì hoãn gửi (phút)</returns>
-        private int CalcDeferredMinutes(DisplayNameAndRecipient displayNameAndRecipient, IReadOnlyCollection<DeferredDeliveryMinutes> deferredDeliveryMinutes, bool isDoNotUseDeferredDeliveryIfAllRecipientsAreInternalDomain, int externalDomainCount)
+        private static int CalcDeferredMinutes(DisplayNameAndRecipient displayNameAndRecipient, List<DeferredDeliveryMinutes> deferredDeliveryMinutes, bool isDoNotUseDeferredDeliveryIfAllRecipientsAreInternalDomain, int externalDomainCount)
         {
             if (deferredDeliveryMinutes.Count == 0) return 0;
             if (externalDomainCount == 0 && isDoNotUseDeferredDeliveryIfAllRecipientsAreInternalDomain) return 0;
@@ -1705,7 +1705,7 @@ namespace OutlookOkan.Models
         /// <param name="mailItemsRecipientAndMailAddress">Địa chỉ email và Recipient của MailItem</param>
         /// <param name="senderMailAddress">Địa chỉ email người gửi</param>
         /// <param name="isNeedsAddToSender">Có thêm địa chỉ người gửi vào To hay không</param>
-        private void ChangeToBcc<T>(T item, IReadOnlyCollection<MailItemsRecipientAndMailAddress> mailItemsRecipientAndMailAddress, string senderMailAddress, bool isNeedsAddToSender)
+        private static void ChangeToBcc<T>(T item, IReadOnlyCollection<MailItemsRecipientAndMailAddress> mailItemsRecipientAndMailAddress, string senderMailAddress, bool isNeedsAddToSender)
         {
             if ((dynamic)item is null) return;
 
@@ -1760,7 +1760,7 @@ namespace OutlookOkan.Models
         /// <param name="senderMailAddress">Địa chỉ người gửi</param>
         /// <param name="forceAutoChangeRecipientsToBccSetting">Cài đặt bắt buộc chuyển đổi người nhận sang Bcc</param>
         /// <returns>DisplayNameAndRecipient</returns>
-        private DisplayNameAndRecipient ExternalDomainsChangeToBccIfNeeded<T>(T item, DisplayNameAndRecipient displayNameAndRecipient, ExternalDomainsWarningAndAutoChangeToBcc settings, ICollection<InternalDomain> internalDomains, int externalDomainNumToAndCc, string senderDomain, string senderMailAddress, ForceAutoChangeRecipientsToBcc forceAutoChangeRecipientsToBccSetting)
+        private DisplayNameAndRecipient ExternalDomainsChangeToBccIfNeeded<T>(T item, DisplayNameAndRecipient displayNameAndRecipient, ExternalDomainsWarningAndAutoChangeToBcc settings, List<InternalDomain> internalDomains, int externalDomainNumToAndCc, string senderDomain, string senderMailAddress, ForceAutoChangeRecipientsToBcc forceAutoChangeRecipientsToBccSetting)
         {
             if ((!settings.IsAutoChangeToBccWhenLargeNumberOfExternalDomains || settings.IsProhibitedWhenLargeNumberOfExternalDomains || settings.TargetToAndCcExternalDomainsNum > externalDomainNumToAndCc) && !forceAutoChangeRecipientsToBccSetting.IsForceAutoChangeRecipientsToBcc) return displayNameAndRecipient;
 
@@ -1860,7 +1860,7 @@ namespace OutlookOkan.Models
         /// <param name="recipientsAndAttachmentsNameList">Cài đặt liên kết giữa người nhận và tên tệp đính kèm</param>
         /// <param name="attachmentAlertRecipientsList">Cài đặt người nhận cảnh báo tệp đính kèm và nội dung cảnh báo</param>
         /// <returns>CheckList</returns>
-        private CheckList CheckRecipientsAndAttachments(CheckList checkList, bool isAttachmentsProhibited, bool isWarningWhenAttachedRealFile, IReadOnlyCollection<AttachmentProhibitedRecipients> attachmentProhibitedRecipientsList, IReadOnlyCollection<RecipientsAndAttachmentsName> recipientsAndAttachmentsNameList, IReadOnlyCollection<AttachmentAlertRecipients> attachmentAlertRecipientsList)
+        private CheckList CheckRecipientsAndAttachments(CheckList checkList, bool isAttachmentsProhibited, bool isWarningWhenAttachedRealFile, List<AttachmentProhibitedRecipients> attachmentProhibitedRecipientsList, List<RecipientsAndAttachmentsName> recipientsAndAttachmentsNameList, List<AttachmentAlertRecipients> attachmentAlertRecipientsList)
         {
             if (checkList.Attachments.Count <= 0) return checkList;
 
@@ -1979,7 +1979,7 @@ namespace OutlookOkan.Models
         /// <param name="contactsList">Danh bạ (Sổ địa chỉ)</param>
         /// <param name="isAutoCheckRegisteredInContacts">Có tự động đánh dấu kiểm tra cho người nhận đã đăng ký trong danh bạ hay không</param>
         /// <returns>CheckList</returns>
-        private CheckList AutoCheckRegisteredItemsInContacts(CheckList checkList, DisplayNameAndRecipient displayNameAndRecipient, IEnumerable<string> contactsList, bool isAutoCheckRegisteredInContacts)
+        private static CheckList AutoCheckRegisteredItemsInContacts(CheckList checkList, DisplayNameAndRecipient displayNameAndRecipient, IEnumerable<string> contactsList, bool isAutoCheckRegisteredInContacts)
         {
             if (!isAutoCheckRegisteredInContacts) return checkList;
 
@@ -2014,7 +2014,7 @@ namespace OutlookOkan.Models
         /// <param name="isWarningIfRecipientsIsNotRegistered">Có hiển thị cảnh báo cho người nhận chưa đăng ký hay không</param>
         /// <param name="isProhibitsSendingMailIfRecipientsIsNotRegistered">Có cấm gửi mail nếu tồn tại người nhận chưa đăng ký hay không</param>
         /// <returns>CheckList</returns>
-        private CheckList AddAlertOrProhibitsSendingMailIfIfRecipientsIsNotRegistered(CheckList checkList, DisplayNameAndRecipient displayNameAndRecipient, IEnumerable<string> contactsList, IReadOnlyCollection<InternalDomain> internalDomainList, bool isWarningIfRecipientsIsNotRegistered, bool isProhibitsSendingMailIfRecipientsIsNotRegistered)
+        private CheckList AddAlertOrProhibitsSendingMailIfIfRecipientsIsNotRegistered(CheckList checkList, DisplayNameAndRecipient displayNameAndRecipient, IEnumerable<string> contactsList, List<InternalDomain> internalDomainList, bool isWarningIfRecipientsIsNotRegistered, bool isProhibitsSendingMailIfRecipientsIsNotRegistered)
         {
             if (!(isWarningIfRecipientsIsNotRegistered || isProhibitsSendingMailIfRecipientsIsNotRegistered)) return checkList;
 
@@ -2023,7 +2023,7 @@ namespace OutlookOkan.Models
             foreach (var to in displayNameAndRecipient.To.Where(to => !selectedContactsList.Contains(to.Key)))
             {
                 // Không áp dụng cho tên miền nội bộ
-                if (internalDomainList.Any(internalDomain => to.Key.EndsWith(internalDomain.Domain))) continue;
+                if (internalDomainList.Any(internalDomain => to.Key.EndsWith(internalDomain.Domain, StringComparison.OrdinalIgnoreCase))) continue;
 
                 if (isProhibitsSendingMailIfRecipientsIsNotRegistered)
                 {
@@ -2038,7 +2038,7 @@ namespace OutlookOkan.Models
             foreach (var cc in displayNameAndRecipient.Cc.Where(cc => !selectedContactsList.Contains(cc.Key)))
             {
                 // Không áp dụng cho tên miền nội bộ
-                if (internalDomainList.Any(internalDomain => cc.Key.EndsWith(internalDomain.Domain))) continue;
+                if (internalDomainList.Any(internalDomain => cc.Key.EndsWith(internalDomain.Domain, StringComparison.OrdinalIgnoreCase))) continue;
 
                 if (isProhibitsSendingMailIfRecipientsIsNotRegistered)
                 {
@@ -2053,7 +2053,7 @@ namespace OutlookOkan.Models
             foreach (var bcc in displayNameAndRecipient.Bcc.Where(bcc => !selectedContactsList.Contains(bcc.Key)))
             {
                 // Không áp dụng cho tên miền nội bộ
-                if (internalDomainList.Any(internalDomain => bcc.Key.EndsWith(internalDomain.Domain))) continue;
+                if (internalDomainList.Any(internalDomain => bcc.Key.EndsWith(internalDomain.Domain, StringComparison.OrdinalIgnoreCase))) continue;
 
                 if (isProhibitsSendingMailIfRecipientsIsNotRegistered)
                 {
@@ -2128,7 +2128,7 @@ namespace OutlookOkan.Models
                 // Avoid creating regex on every email address validation call
                 // Performance: Compiled regex is much faster for repeated use
                 emailAddress = DomainRegex.Replace(emailAddress, DomainMapper);
-                
+
                 string DomainMapper(Match match)
                 {
                     var idnMapping = new IdnMapping();
@@ -2235,7 +2235,7 @@ namespace OutlookOkan.Models
         /// </summary>
         /// <param name="x500">Địa chỉ định dạng X500</param>
         /// <returns>Địa chỉ email thông thường</returns>
-        private string GetExchangePrimarySmtpAddress(string x500)
+        private static string GetExchangePrimarySmtpAddress(string x500)
         {
             if (string.IsNullOrEmpty(x500)) return null;
             if (!IsX500Address(x500)) return null;
@@ -2287,7 +2287,7 @@ namespace OutlookOkan.Models
         /// </summary>
         /// <param name="emailAddress">Địa chỉ email</param>
         /// <returns>Có phải định dạng X500 hay không</returns>
-        private bool IsX500Address(string emailAddress)
+        private static bool IsX500Address(string emailAddress)
         {
             const string x500Pattern = @"^/o=.*/ou=.*/cn=.*";
 

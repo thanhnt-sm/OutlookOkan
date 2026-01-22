@@ -62,7 +62,7 @@ namespace OutlookOkan.Handlers
             }
         }
 
-        internal static void CreateOrReplaceCsv(Type classMapType, string fileName, IEnumerable<object> records, string directoryPath = null)
+        internal static void CreateOrReplaceCsv(Type classMapType, string fileName, IEnumerable<object> records, string? directoryPath = null)
         {
             var targetDirectory = directoryPath ?? DirectoryPath;
             if (!Directory.Exists(targetDirectory))

@@ -14,7 +14,7 @@ namespace OutlookOkan.Helpers
         /// <summary>
         /// Executes a function that returns a value, with retry logic for COM exceptions.
         /// </summary>
-        public static T Execute<T>(Func<T> action, T defaultValue = default)
+        public static T Execute<T>(Func<T> action, T defaultValue = default!)
         {
             var errorCount = 0;
             while (errorCount < Constants.MAX_RETRY_COUNT)
@@ -84,7 +84,7 @@ namespace OutlookOkan.Helpers
             // E_ABORT (0x80004004) or RPC errors often need retry
             // RPC_E_CALL_REJECTED (0x80010001)
             // RPC_E_SERVERCALL_RETRYLATER (0x8001010A)
-            return e.ErrorCode == Constants.E_ABORT || 
+            return e.ErrorCode == Constants.E_ABORT ||
                    e.ErrorCode == -2147418111 || // 0x80010001
                    e.ErrorCode == -2147417846;   // 0x8001010A
         }

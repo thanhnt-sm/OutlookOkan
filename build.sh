@@ -3,99 +3,138 @@
 # OutlookOkan Cross-Platform Build Script
 # ==============================================================================
 # SYNOPSIS
-#   Builds the OutlookOkan VSTO Add-in on Windows (natively) or macOS/Linux (via Mono/Dotnet).
+#   Builds the OutlookOkan VSTO Add-in on Windows (natively) or macOS/Linux (via Mono).
 #
 # DESCRIPTION
-#   This script detects the operating system and available build tools to attempt
-#   a successful build.
+#   This script detects the operating system and available build tools.
 #
-#   - WINDOWS: Uses specific MSBuild path or auto-detects.
-#   - MAC/LINUX: Prioritizes Mono `msbuild` (best for legacy .NET Framework).
-#                Falls back to `dotnet build` (requires SDK-style projects, may fail for VSTO).
+#   - WINDOWS: Uses MSBuild from Visual Studio
+#   - MAC/LINUX: Uses Mono msbuild (required for .NET Framework VSTO projects)
+#
+# REQUIREMENTS (macOS)
+#   brew install mono
+#   brew install --cask visual-studio  # For Office Interop assemblies
 #
 # USAGE
-#   ./build.sh
+#   ./build.sh [Debug|Release]
 # ==============================================================================
 
-# User-defined MSBuild path (Windows only)
-WINDOWS_MSBUILD_PATH="C:/Program Files/Microsoft Visual Studio/18/Enterprise/MSBuild/Current/Bin/MSBuild.exe"
-SOLUTION_FILE="./OutlookOkan.sln"
-CONFIGURATION="Release"
+set -e  # Exit on error
 
-echo "================================================================"
-echo "  OutlookOkan Build Wrapper"
-echo "================================================================"
+# Configuration
+SOLUTION_FILE="./OutlookOkan.sln"
+CONFIGURATION="${1:-Release}"
+EXIT_CODE=0
+
+echo "╔════════════════════════════════════════════════════════════╗"
+echo "║            OutlookOkan Build Script                        ║"
+echo "╚════════════════════════════════════════════════════════════╝"
+echo ""
 
 OS_NAME=$(uname -s)
-echo "[INFO] Detected OS: $OS_NAME"
+echo "📍 OS: $OS_NAME"
+echo "📦 Configuration: $CONFIGURATION"
+echo ""
 
 # ------------------------------------------------------------------------------
-# 1. WINDOWS EXECUTION (Git Bash, WSL, Cygwin)
+# WINDOWS EXECUTION (Git Bash, WSL, Cygwin)
 # ------------------------------------------------------------------------------
 if [[ "$OS_NAME" == *"MINGW"* ]] || [[ "$OS_NAME" == *"CYGWIN"* ]] || [[ "$OS_NAME" == *"MSYS"* ]]; then
-    echo "[INFO] Window-like environment detected."
+    echo "🖥️  Windows-like environment detected"
     
-    if [ -f "$WINDOWS_MSBUILD_PATH" ]; then
-        echo "[INFO] Found specific MSBuild: $WINDOWS_MSBUILD_PATH"
-        "$WINDOWS_MSBUILD_PATH" "$SOLUTION_FILE" -t:Rebuild -p:Configuration=$CONFIGURATION -v:m
-    else
-        echo "[WARN] Specific MSBuild not found. Checking PATH..."
-        if command -v msbuild &> /dev/null; then
-            msbuild "$SOLUTION_FILE" -t:Rebuild -p:Configuration=$CONFIGURATION -v:m
-        else
-            echo "[ERROR] MSBuild not found. Please install Visual Studio."
-            exit 1
+    # Try to find MSBuild in common locations
+    MSBUILD_PATHS=(
+        "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/MSBuild/Current/Bin/MSBuild.exe"
+        "C:/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe"
+        "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/MSBuild.exe"
+        "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/MSBuild/Current/Bin/MSBuild.exe"
+        "C:/Program Files (x86)/Microsoft Visual Studio/2019/Professional/MSBuild/Current/Bin/MSBuild.exe"
+        "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe"
+    )
+    
+    MSBUILD_PATH=""
+    for path in "${MSBUILD_PATHS[@]}"; do
+        if [ -f "$path" ]; then
+            MSBUILD_PATH="$path"
+            break
         fi
+    done
+    
+    if [ -n "$MSBUILD_PATH" ]; then
+        echo "✅ Found MSBuild: $MSBUILD_PATH"
+        "$MSBUILD_PATH" "$SOLUTION_FILE" -t:Rebuild -p:Configuration=$CONFIGURATION -v:m
+        EXIT_CODE=$?
+    elif command -v msbuild &> /dev/null; then
+        echo "✅ Using msbuild from PATH"
+        msbuild "$SOLUTION_FILE" -t:Rebuild -p:Configuration=$CONFIGURATION -v:m
+        EXIT_CODE=$?
+    else
+        echo "❌ ERROR: MSBuild not found. Please install Visual Studio."
+        exit 1
     fi
 
 # ------------------------------------------------------------------------------
-# 2. MACOS / LINUX EXECUTION
+# MACOS / LINUX EXECUTION
 # ------------------------------------------------------------------------------
 else
-    echo "[INFO] Unix-like environment detected."
-
-    # A. Check for Mono (Recommended for VSTO/.NET Framework legacy projects)
+    echo "🍎 Unix-like environment detected (macOS/Linux)"
+    echo ""
+    
+    # Check for Mono msbuild (REQUIRED for .NET Framework VSTO projects)
     if command -v msbuild &> /dev/null; then
-        echo "[INFO] Found Mono 'msbuild'. This is the best option for .NET Framework on macOS."
-        echo "       Attempting build with Mono..."
+        echo "✅ Found Mono msbuild"
         
-        # Check for FrameworkPathOverride (common fix for Mono finding assemblies)
+        # Set FrameworkPathOverride if not set (helps Mono find assemblies)
         if [ -z "$FrameworkPathOverride" ]; then
-             echo "[HINT] If build fails on 'mscorlib', try setting: export FrameworkPathOverride=\$(dirname \$(which mono))/../lib/mono/4.5/"
+            MONO_LIB=$(dirname $(which mono))/../lib/mono/4.5/
+            if [ -d "$MONO_LIB" ]; then
+                export FrameworkPathOverride="$MONO_LIB"
+                echo "📌 Set FrameworkPathOverride=$FrameworkPathOverride"
+            fi
         fi
-
+        
+        echo ""
+        echo "🔨 Building with Mono..."
+        echo "────────────────────────────────────────────────────────────"
         msbuild "$SOLUTION_FILE" /t:Rebuild /p:Configuration=$CONFIGURATION /v:m
-        
-    # B. Check for Dotnet SDK (Fallback)
-    elif command -v dotnet &> /dev/null; then
-        echo "[WARN] Mono not found. Fallback to 'dotnet' CLI."
-        echo "[WARN] This is a legacy .NET Framework VSTO project."
-        echo "       'dotnet build' will likely FAIL unless the project is migrated to SDK-style."
-        echo "       Current .NET SDK: $(dotnet --version)"
-        
-        echo "Attempting 'dotnet restore'..."
-        dotnet restore "$SOLUTION_FILE"
-        
-        echo "Attempting 'dotnet build'..."
-        dotnet build "$SOLUTION_FILE" --configuration $CONFIGURATION
+        EXIT_CODE=$?
         
     else
-        echo "[ERROR] No build tools found."
-        echo "       Please install 'Mono' (recommended) or '.NET SDK'."
-        echo "       Brew: brew install mono"
+        echo "❌ ERROR: Mono msbuild not found."
+        echo ""
+        echo "💡 To install on macOS:"
+        echo "   brew install mono"
+        echo ""
+        echo "⚠️  Note: VSTO projects require .NET Framework which is Windows-only."
+        echo "   Mono provides partial compatibility but may not build all targets."
+        echo "   For full build support, use Windows with Visual Studio."
         exit 1
     fi
 fi
 
-EXIT_CODE=$?
+# ------------------------------------------------------------------------------
+# BUILD RESULT
+# ------------------------------------------------------------------------------
 echo ""
+echo "────────────────────────────────────────────────────────────"
 if [ $EXIT_CODE -eq 0 ]; then
-    echo "✅ BUILD SUCCESSFUL"
+    echo "╔════════════════════════════════════════════════════════════╗"
+    echo "║              ✅ BUILD SUCCESSFUL                           ║"
+    echo "╚════════════════════════════════════════════════════════════╝"
+    echo ""
+    echo "📍 Output: OutlookOkan/bin/$CONFIGURATION/OutlookOkan.dll"
 else
-    echo "❌ BUILD FAILED (Exit Code: $EXIT_CODE)"
-    if [[ "$OS_NAME" != *"MINGW"* ]]; then
-        echo "NOTE: VSTO projects heavily rely on Windows COM targets."
-        echo "      A failure on macOS is expected if missing 'Microsoft.VisualStudio.Tools.Office.targets'."
+    echo "╔════════════════════════════════════════════════════════════╗"
+    echo "║              ❌ BUILD FAILED (Exit: $EXIT_CODE)               ║"
+    echo "╚════════════════════════════════════════════════════════════╝"
+    echo ""
+    if [[ "$OS_NAME" == "Darwin" ]]; then
+        echo "⚠️  Note: VSTO projects have Windows-specific dependencies."
+        echo "   Common issues on macOS:"
+        echo "   - Missing 'Microsoft.VisualStudio.Tools.Office.targets'"
+        echo "   - Missing Office Interop assemblies"
+        echo ""
+        echo "💡 Consider building on Windows for full VSTO support."
     fi
 fi
 

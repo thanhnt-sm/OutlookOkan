@@ -16,6 +16,7 @@ using Outlook = Microsoft.Office.Interop.Outlook;
 
 namespace OutlookOkan
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1724:Type names should not match namespaces", Justification = "VSTO Requirement")]
     [ComVisible(true)]
     public class Ribbon : Office.IRibbonExtensibility
     {
