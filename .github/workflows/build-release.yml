@@ -4,91 +4,282 @@ on:
   push:
     branches:
       - master
-    tags:
-      - 'v*'
+    paths:
+      - 'OutlookOkan/**'
+      - '.github/workflows/**'
   pull_request:
     branches:
       - master
+  # ⭐ FLEXIBLE: Leave empty = Auto mode | Fill in = Manual mode
   workflow_dispatch:
     inputs:
-      tag_name:
-        description: 'Tag name for release (e.g. v1.0.0)'
+      custom_tag:
+        description: '🏷️ Custom tag (leave empty = auto bump)'
+        required: false
+        default: ''
+      custom_description:
+        description: '📝 Custom description (leave empty = auto from commits)'
         required: false
         default: ''
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
 jobs:
+  # ============================================
+  # STAGE 1: Version & Changelog
+  # ============================================
+  version:
+    name: 📊 Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.final.outputs.version }}
+      previous_tag: ${{ steps.auto.outputs.previous_tag }}
+      changelog: ${{ steps.final.outputs.changelog }}
+      is_manual: ${{ steps.check.outputs.is_manual }}
+      
+    steps:
+    - name: 📥 Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: 🔍 Check Mode
+      id: check
+      run: |
+        CUSTOM_TAG="${{ github.event.inputs.custom_tag }}"
+        CUSTOM_DESC="${{ github.event.inputs.custom_description }}"
+        
+        if [ -n "$CUSTOM_TAG" ]; then
+          echo "is_manual=true" >> $GITHUB_OUTPUT
+          echo "### 🎯 Mode: MANUAL" >> $GITHUB_STEP_SUMMARY
+          echo "- Custom Tag: \`$CUSTOM_TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Custom Description: ${CUSTOM_DESC:-'(none)'}" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "is_manual=false" >> $GITHUB_OUTPUT
+          echo "### 🤖 Mode: AUTO" >> $GITHUB_STEP_SUMMARY
+          echo "- Tag: Auto bump" >> $GITHUB_STEP_SUMMARY
+          echo "- Description: Auto from commits" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+    # ======= AUTO MODE =======
+    - name: 🏷️ Auto Bump Tag
+      id: auto
+      if: steps.check.outputs.is_manual != 'true'
+      uses: anothrNick/github-tag-action@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        WITH_V: true
+        DEFAULT_BUMP: patch
+        RELEASE_BRANCHES: master
+        DRY_RUN: false
+        INITIAL_VERSION: 1.0.0
+        
+    - name: 📝 Auto Generate Changelog
+      id: auto_changelog
+      if: steps.check.outputs.is_manual != 'true'
+      run: |
+        PREVIOUS_TAG="${{ steps.auto.outputs.previous_tag }}"
+        
+        if [ -z "$PREVIOUS_TAG" ]; then
+          COMMITS=$(git log --pretty=format:"- %s (%h)" -n 50)
+        else
+          COMMITS=$(git log --pretty=format:"- %s (%h)" ${PREVIOUS_TAG}..HEAD)
+        fi
+        
+        FEATURES=$(echo "$COMMITS" | grep -iE "^- (feat|feature|add|new):" || true)
+        FIXES=$(echo "$COMMITS" | grep -iE "^- (fix|bug|patch|resolve):" || true)
+        IMPROVEMENTS=$(echo "$COMMITS" | grep -iE "^- (refactor|perf|improve|update|enhance):" || true)
+        OTHER=$(echo "$COMMITS" | grep -ivE "^- (feat|feature|add|new|fix|bug|patch|resolve|refactor|perf|improve|update|enhance):" || true)
+        
+        CHANGELOG=""
+        [ -n "$FEATURES" ] && CHANGELOG="${CHANGELOG}### ✨ New Features\n${FEATURES}\n\n"
+        [ -n "$FIXES" ] && CHANGELOG="${CHANGELOG}### 🐛 Bug Fixes\n${FIXES}\n\n"
+        [ -n "$IMPROVEMENTS" ] && CHANGELOG="${CHANGELOG}### ⚡ Improvements\n${IMPROVEMENTS}\n\n"
+        [ -n "$OTHER" ] && CHANGELOG="${CHANGELOG}### 🔧 Other Changes\n${OTHER}\n\n"
+        
+        [ -z "$CHANGELOG" ] && CHANGELOG="### 📝 Changes\n${COMMITS}\n"
+        
+        echo "changelog<<EOF" >> $GITHUB_OUTPUT
+        echo -e "$CHANGELOG" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+        
+    # ======= MANUAL MODE =======
+    - name: 🏷️ Create Manual Tag
+      if: steps.check.outputs.is_manual == 'true'
+      run: |
+        CUSTOM_TAG="${{ github.event.inputs.custom_tag }}"
+        # Add 'v' prefix if not present
+        if [[ ! "$CUSTOM_TAG" =~ ^v ]]; then
+          CUSTOM_TAG="v${CUSTOM_TAG}"
+        fi
+        
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git tag -a "$CUSTOM_TAG" -m "Release $CUSTOM_TAG"
+        git push origin "$CUSTOM_TAG"
+        echo "✅ Created tag: $CUSTOM_TAG" >> $GITHUB_STEP_SUMMARY
+        
+    # ======= FINAL OUTPUT =======
+    - name: 📊 Set Final Outputs
+      id: final
+      run: |
+        IS_MANUAL="${{ steps.check.outputs.is_manual }}"
+        
+        if [ "$IS_MANUAL" == "true" ]; then
+          # MANUAL MODE
+          CUSTOM_TAG="${{ github.event.inputs.custom_tag }}"
+          [[ ! "$CUSTOM_TAG" =~ ^v ]] && CUSTOM_TAG="v${CUSTOM_TAG}"
+          
+          echo "version=${CUSTOM_TAG}" >> $GITHUB_OUTPUT
+          
+          CUSTOM_DESC="${{ github.event.inputs.custom_description }}"
+          if [ -n "$CUSTOM_DESC" ]; then
+            echo "changelog<<EOF" >> $GITHUB_OUTPUT
+            echo "### 📝 Release Notes" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "$CUSTOM_DESC" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "changelog=Manual release" >> $GITHUB_OUTPUT
+          fi
+        else
+          # AUTO MODE
+          echo "version=${{ steps.auto.outputs.new_tag }}" >> $GITHUB_OUTPUT
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "${{ steps.auto_changelog.outputs.changelog }}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: 📋 Summary
+      run: |
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📊 Final Version: \`${{ steps.final.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================
+  # STAGE 2: Build
+  # ============================================
   build:
-    name: Build VSTO Add-in
+    name: 🔨 Build
     runs-on: windows-latest
+    needs: version
     
     steps:
-    - name: Checkout Code
+    - name: 📥 Checkout
       uses: actions/checkout@v4
 
-    - name: Setup MSBuild
+    - name: 🔧 Setup MSBuild
       uses: microsoft/setup-msbuild@v2
 
-    - name: Setup NuGet
+    - name: 📦 Setup NuGet
       uses: NuGet/setup-nuget@v2
 
-    - name: Restore NuGet Packages
+    - name: 📥 Restore Packages
       run: nuget restore OutlookOkan.sln
 
-    - name: Import Signing Certificate
-      run: |
-        $pfxPath = "${{ github.workspace }}\OutlookOkan\OutlookOkan_CI.pfx"
-        $password = ConvertTo-SecureString -String "123456" -AsPlainText -Force
-        
-        Write-Host "Importing to CurrentUser\My..."
-        Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation "Cert:\CurrentUser\My" -Password $password
-        
-        Write-Host "Importing to LocalMachine\Root (Trusted Root)..."
-        Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation "Cert:\LocalMachine\Root" -Password $password
-        
-        Write-Host "Certificates imported successfully."
+    - name: 🔄 Stamp Version
       shell: pwsh
+      run: |
+        $version = "${{ needs.version.outputs.version }}".TrimStart('v')
+        $parts = $version -split '\.'
+        $asmVersion = "$($parts[0]).$($parts[1]).$($parts[2]).0"
+        
+        $path = "OutlookOkan/Properties/AssemblyInfo.cs"
+        if (Test-Path $path) {
+          $content = Get-Content $path -Raw
+          $content = $content -replace 'AssemblyVersion\("[^"]*"\)', "AssemblyVersion(`"$asmVersion`")"
+          $content = $content -replace 'AssemblyFileVersion\("[^"]*"\)', "AssemblyFileVersion(`"$asmVersion`")"
+          Set-Content $path $content
+        }
 
-    - name: Build and Publish
-      run: msbuild OutlookOkan/OutlookOkan.csproj /t:Publish /p:Configuration=Release /p:Platform=AnyCPU /p:PublishDir=app.publish/ /p:ManifestTimestampUrl="" /fl "/flp:logfile=msbuild.log;verbosity=detailed"
+    - name: 🔐 Import Certificate
+      shell: pwsh
+      run: |
+        $pfx = "${{ github.workspace }}\OutlookOkan\OutlookOkan_CI.pfx"
+        $pwd = ConvertTo-SecureString "123456" -AsPlainText -Force
+        Import-PfxCertificate -FilePath $pfx -CertStoreLocation "Cert:\CurrentUser\My" -Password $pwd
+        Import-PfxCertificate -FilePath $pfx -CertStoreLocation "Cert:\LocalMachine\Root" -Password $pwd
 
-    - name: Archive Production Artifacts
+    - name: 🏗️ Build
+      shell: pwsh
+      run: |
+        msbuild OutlookOkan/OutlookOkan.csproj `
+          /t:Publish /p:Configuration=Release /p:Platform=AnyCPU `
+          /p:PublishDir=app.publish/ /p:ManifestTimestampUrl="" `
+          /fl "/flp:logfile=msbuild.log;verbosity=normal"
+
+    - name: 📦 Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: OutlookOkan-Installer
+        name: OutlookOkan-${{ needs.version.outputs.version }}
         path: OutlookOkan/app.publish/**
-        retention-days: 5
-
-    - name: Upload Build Log
+        retention-days: 30
+        
+    - name: 📋 Upload Log
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: msbuild-log
+        name: build-log
         path: msbuild.log
-        retention-days: 1
+        retention-days: 7
 
+  # ============================================
+  # STAGE 3: Release
+  # ============================================
   release:
-    name: Create GitHub Release
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    name: 🚀 Release
     runs-on: ubuntu-latest
+    needs: [version, build]
     permissions:
       contents: write
-    
+      
     steps:
-    - name: Download Artifacts
+    - name: 📥 Download Artifacts
       uses: actions/download-artifact@v4
       with:
-        name: OutlookOkan-Installer
-        path: install
-
-    - name: Zip Installer
-      run: zip -r OutlookOkan_Installer.zip install
-
-    - name: Create Release
+        name: OutlookOkan-${{ needs.version.outputs.version }}
+        path: installer
+        
+    - name: 📦 Package
+      run: |
+        VERSION="${{ needs.version.outputs.version }}"
+        cd installer && zip -r ../OutlookOkan_${VERSION}_Installer.zip . && cd ..
+        sha256sum OutlookOkan_${VERSION}_Installer.zip > CHECKSUMS.sha256
+        
+    - name: 🚀 Create Release
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: ${{ inputs.tag_name }}
-        files: OutlookOkan_Installer.zip
-        generate_release_notes: true
+        tag_name: ${{ needs.version.outputs.version }}
+        name: 🎉 OutlookOkan ${{ needs.version.outputs.version }}
+        body: |
+          ## 📋 What's Changed
+          
+          ${{ needs.version.outputs.changelog }}
+          
+          ---
+          
+          ## 📦 Installation
+          
+          1. Download `OutlookOkan_${{ needs.version.outputs.version }}_Installer.zip`
+          2. Extract and run `setup.exe`
+          3. Restart Microsoft Outlook
+          
+          ---
+          
+          📊 **Compare:** [${{ needs.version.outputs.previous_tag }}...${{ needs.version.outputs.version }}](https://github.com/${{ github.repository }}/compare/${{ needs.version.outputs.previous_tag }}...${{ needs.version.outputs.version }})
+        files: |
+          OutlookOkan_${{ needs.version.outputs.version }}_Installer.zip
+          CHECKSUMS.sha256
         draft: false
         prerelease: false
+        
+    - name: 🎉 Summary
+      run: |
+        echo "### 🎉 Released: ${{ needs.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+        echo "[View Release](https://github.com/${{ github.repository }}/releases/tag/${{ needs.version.outputs.version }})" >> $GITHUB_STEP_SUMMARY

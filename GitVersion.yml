@@ -1,0 +1,103 @@
+# GitVersion Configuration for OutlookOkan
+# Semantic Versioning based on Conventional Commits
+# Documentation: https://gitversion.net/docs/reference/configuration
+
+mode: ContinuousDeployment
+assembly-versioning-scheme: MajorMinorPatch
+assembly-file-versioning-scheme: MajorMinorPatchTag
+
+# Branch configurations
+branches:
+  master:
+    mode: ContinuousDeployment
+    tag: ''
+    increment: Patch
+    prevent-increment-of-merged-branch-version: true
+    track-merge-target: false
+    regex: ^master$
+    source-branches:
+      - develop
+      - feature
+      - hotfix
+      - release
+    is-release-branch: true
+    is-mainline: true
+    
+  develop:
+    mode: ContinuousDeployment
+    tag: alpha
+    increment: Minor
+    regex: ^dev(elop)?$
+    source-branches: []
+    
+  feature:
+    mode: ContinuousDeployment
+    tag: feature-{BranchName}
+    increment: Inherit
+    regex: ^features?[/-]
+    source-branches:
+      - master
+      - develop
+      
+  release:
+    mode: ContinuousDeployment
+    tag: rc
+    increment: Patch
+    regex: ^releases?[/-]
+    source-branches:
+      - master
+      - develop
+    is-release-branch: true
+    
+  hotfix:
+    mode: ContinuousDeployment
+    tag: hotfix
+    increment: Patch
+    regex: ^hotfix(es)?[/-]
+    source-branches:
+      - master
+    is-release-branch: true
+    
+  pull-request:
+    mode: ContinuousDeployment
+    tag: PR
+    increment: Inherit
+    tag-number-pattern: '[/-](?<number>\d+)[-/]'
+    regex: ^(pull|pull\-requests|pr)[/-]
+    source-branches:
+      - master
+      - develop
+      - feature
+
+# Commit message increment strategies (Conventional Commits)
+major-version-bump-message: '\+semver:\s?(breaking|major)'
+minor-version-bump-message: '\+semver:\s?(feature|minor)'
+patch-version-bump-message: '\+semver:\s?(fix|patch)'
+no-bump-message: '\+semver:\s?(skip|none)'
+
+# Conventional Commits patterns
+# feat: -> Minor bump
+# fix: -> Patch bump  
+# BREAKING CHANGE: or feat!: -> Major bump
+commit-message-incrementing: Enabled
+
+# Version format
+tag-prefix: v
+version-in-branch-pattern: (?\u003cversion\u003e[vV]?\d+(\.\d+)?(\.\d+)?).*
+
+# Build metadata
+commit-date-format: yyyy-MM-dd
+
+# Ignore certain commits
+ignore:
+  sha: []
+  commits-before: 2024-01-01
+
+# Strategies
+strategies:
+  - VersionInBranchName
+  - Fallback
+  - ConfiguredNextVersion
+  - MergeMessage
+  - TaggedCommit
+  - TrackReleaseBranches
