@@ -57,7 +57,11 @@ namespace OutlookOkan.Models
         /// Danh sách địa chỉ được phép (whitelist)
         /// Các địa chỉ trong whitelist sẽ được tự động check trong cửa sổ xác nhận
         /// </summary>
-        private List<Whitelist> _whitelist;
+        /// <summary>
+        /// Danh sách địa chỉ được phép (whitelist)
+        /// Key: Address/Domain, Value: IsSkipConfirmation
+        /// </summary>
+        private Dictionary<string, bool> _whitelist;
 
         /// <summary>
         /// Bộ đếm để tạo ID duy nhất cho các địa chỉ không lấy được thông tin
@@ -106,7 +110,7 @@ namespace OutlookOkan.Models
         internal CheckList GenerateCheckListFromMail<T>(T item, GeneralSetting generalSetting, Outlook.MAPIFolder contacts, AutoAddMessage autoAddMessageSetting, SettingsService settingsService)
         {
             // Initialize local whitelist from settings (copy to allow modification during processing)
-            _whitelist = new List<Whitelist>(settingsService.Whitelist);
+            _whitelist = new Dictionary<string, bool>(settingsService.Whitelist, StringComparer.OrdinalIgnoreCase);
 
             switch (item)
             {
@@ -124,7 +128,8 @@ namespace OutlookOkan.Models
 
                     if (meetingItem.RTFBody is byte[] byteArray)
                     {
-                        var encoding = new System.Text.ASCIIEncoding();
+                        // [MODIFIED] Force UTF-8 for Vietnamese support
+                        var encoding = System.Text.Encoding.UTF8;
                         _checkList.MailHtmlBody = encoding.GetString(byteArray);
                     }
                     else
@@ -137,12 +142,13 @@ namespace OutlookOkan.Models
                     _checkList.MailType = Resources.TaskRequest;
 
                     var associatedTask = taskRequestItem.GetAssociatedTask(false);
-                    Thread.Sleep(10);
+
                     _checkList.MailBody = string.IsNullOrEmpty(associatedTask.Body) ? Resources.FailedToGetInformation : associatedTask.Body.Replace("\r\n\r\n", "\r\n");
 
                     if (associatedTask.RTFBody is byte[] bodyByteArray)
                     {
-                        var encoding = new System.Text.ASCIIEncoding();
+                        // [MODIFIED] Force UTF-8 for Vietnamese support
+                        var encoding = System.Text.Encoding.UTF8;
                         _checkList.MailHtmlBody = encoding.GetString(bodyByteArray);
                     }
                     else
@@ -262,7 +268,7 @@ namespace OutlookOkan.Models
                         var tempRecipient = tempOutlookApp.Session.CreateRecipient(((dynamic)item).SenderEmailAddress);
 
                         _ = tempRecipient.Resolve();
-                        Thread.Sleep(10);
+
                         var addressEntry = tempRecipient.AddressEntry;
 
                         ComRetryHelper.Execute(() =>
@@ -407,7 +413,7 @@ namespace OutlookOkan.Models
                 try
                 {
                     var propertyAccessor = recipient.PropertyAccessor;
-                    Thread.Sleep(20);
+
 
                     // COM Retry Pattern using Helper
                     mailAddress = ComRetryHelper.Execute(() =>
@@ -430,7 +436,7 @@ namespace OutlookOkan.Models
                 {
                     _ = recipient.Resolve();
                     var propertyAccessor = tempRecipient.AddressEntry.PropertyAccessor;
-                    Thread.Sleep(20);
+
 
                     mailAddress = ComRetryHelper.Execute(() =>
                         propertyAccessor.GetProperty(Constants.PR_SMTP_ADDRESS).ToString())
@@ -508,18 +514,15 @@ namespace OutlookOkan.Models
                     return exchangeDistributionListMembers;
                 }
 
-                var externalRecipientCounter = 1;
-                var tempOutlookApp = new Outlook.Application();
+                // var externalRecipientCounter = 1; // Unused
+
                 foreach (Outlook.AddressEntry member in addressEntries)
                 {
-                    var tempRecipient = tempOutlookApp.Session.CreateRecipient(member.Address);
                     var mailAddress = Resources.FailedToGetInformation + "_" + _failedToGetInformationOfRecipientsMailAddressCounter;
 
                     try
                     {
-                        _ = tempRecipient.Resolve();
-                        var propertyAccessor = tempRecipient.AddressEntry.PropertyAccessor;
-                        Thread.Sleep(20);
+                        var propertyAccessor = member.PropertyAccessor;
 
                         mailAddress = ComRetryHelper.Execute(() =>
                             propertyAccessor.GetProperty(Constants.PR_SMTP_ADDRESS).ToString())
@@ -535,7 +538,7 @@ namespace OutlookOkan.Models
 
                     if (exchangeDistributionListMembersAreWhite)
                     {
-                        _whitelist.Add(new Whitelist { WhiteName = mailAddress });
+                        _whitelist[mailAddress] = false;
                     }
                 }
 
@@ -598,7 +601,7 @@ namespace OutlookOkan.Models
 
                 if (contactGroupMembersAreWhite)
                 {
-                    _whitelist.Add(new Whitelist { WhiteName = nameAndRecipient.MailAddress });
+                    _whitelist[nameAndRecipient.MailAddress] = false;
                 }
             }
 
@@ -865,7 +868,7 @@ namespace OutlookOkan.Models
 
                     _checkList.Alerts.Add(new Alert { AlertMessage = Resources.AutoAddDestination + $@"[{autoCcBccKeyword.CcOrBcc}] [{autoCcBccKeyword.AutoAddAddress}] (" + Resources.ApplicableKeywords + $" 「{autoCcBccKeyword.Keyword}」)", IsImportant = false, IsWhite = true, IsChecked = true });
 
-                    _whitelist.Add(new Whitelist { WhiteName = autoCcBccKeyword.AutoAddAddress });
+                    _whitelist[autoCcBccKeyword.AutoAddAddress] = false;
                 }
             }
 
@@ -898,7 +901,7 @@ namespace OutlookOkan.Models
 
                         _checkList.Alerts.Add(new Alert { AlertMessage = Resources.AutoAddDestination + $@"[{autoCcBccAttachedFile.CcOrBcc}] [{autoCcBccAttachedFile.AutoAddAddress}] (" + Resources.Attachments + ")", IsImportant = false, IsWhite = true, IsChecked = true });
 
-                        _whitelist.Add(new Whitelist { WhiteName = autoCcBccAttachedFile.AutoAddAddress });
+                        _whitelist[autoCcBccAttachedFile.AutoAddAddress] = false;
                     }
                 }
             }
@@ -931,7 +934,7 @@ namespace OutlookOkan.Models
 
                     _checkList.Alerts.Add(new Alert { AlertMessage = Resources.AutoAddDestination + $@"[{autoCcBccRecipient.CcOrBcc}] [{autoCcBccRecipient.AutoAddAddress}] (" + Resources.ApplicableDestination + $" 「{autoCcBccRecipient.TargetRecipient}」)", IsImportant = false, IsWhite = true, IsChecked = true });
 
-                    _whitelist.Add(new Whitelist { WhiteName = autoCcBccRecipient.AutoAddAddress });
+                    _whitelist[autoCcBccRecipient.AutoAddAddress] = false;
                 }
             }
 
@@ -1042,11 +1045,14 @@ namespace OutlookOkan.Models
                     }
                 }
 
-                _whitelist.Add(new Whitelist { WhiteName = sender, IsSkipConfirmation = false });
+                _whitelist[sender] = false;
             }
 
             return autoAddRecipients;
         }
+
+        // Regex compiled for performance reuse
+        private static readonly Regex CidRegex = new Regex(@"cid:.*?@", RegexOptions.Compiled);
 
         /// <summary>
         /// Lấy danh sách tên tệp đính kèm được nhúng trong HTML.
@@ -1062,7 +1068,7 @@ namespace OutlookOkan.Models
                 if (((Outlook.MailItem)item).BodyFormat != Outlook.OlBodyFormat.olFormatHTML) return null;
             }
 
-            var matches = Regex.Matches(mailHtmlBody, @"cid:.*?@");
+            var matches = CidRegex.Matches(mailHtmlBody);
 
             if (matches.Count == 0) return null;
 
@@ -1430,14 +1436,20 @@ namespace OutlookOkan.Models
                     isExternal = false;
                 }
 
-                var isWhite = _whitelist.Count != 0 && _whitelist.Any(x => to.Key.EndsWith(x.WhiteName) || to.Key == x.WhiteName);
+                var isWhite = false;
                 var isSkip = false;
-
-                if (isWhite)
+                if (_whitelist.Count > 0)
                 {
-                    foreach (var whitelist in _whitelist.Where(whitelist => to.Key.Contains(whitelist.WhiteName)))
+                    if (_whitelist.TryGetValue(to.Key, out var skip)) { isWhite = true; isSkip = skip; }
+                    else
                     {
-                        isSkip = whitelist.IsSkipConfirmation;
+                        var idx = to.Key.IndexOf("@", StringComparison.Ordinal);
+                        if (idx >= 0)
+                        {
+                            var domain = to.Key.Substring(idx);
+                            if (_whitelist.TryGetValue(domain, out var skipDom)) { isWhite = true; isSkip = skipDom; }
+                            else if (_whitelist.TryGetValue(domain.Substring(1), out var skipDomNoAt)) { isWhite = true; isSkip = skipDomNoAt; }
+                        }
                     }
                 }
 
@@ -1479,14 +1491,20 @@ namespace OutlookOkan.Models
                     isExternal = false;
                 }
 
-                var isWhite = _whitelist.Count != 0 && _whitelist.Any(x => cc.Key.EndsWith(x.WhiteName) || cc.Key == x.WhiteName);
+                var isWhite = false;
                 var isSkip = false;
-
-                if (isWhite)
+                if (_whitelist.Count > 0)
                 {
-                    foreach (var whitelist in _whitelist.Where(whitelist => cc.Key.Contains(whitelist.WhiteName)))
+                    if (_whitelist.TryGetValue(cc.Key, out var skip)) { isWhite = true; isSkip = skip; }
+                    else
                     {
-                        isSkip = whitelist.IsSkipConfirmation;
+                        var idx = cc.Key.IndexOf("@", StringComparison.Ordinal);
+                        if (idx >= 0)
+                        {
+                            var domain = cc.Key.Substring(idx);
+                            if (_whitelist.TryGetValue(domain, out var skipDom)) { isWhite = true; isSkip = skipDom; }
+                            else if (_whitelist.TryGetValue(domain.Substring(1), out var skipDomNoAt)) { isWhite = true; isSkip = skipDomNoAt; }
+                        }
                     }
                 }
 
@@ -1528,14 +1546,20 @@ namespace OutlookOkan.Models
                     isExternal = false;
                 }
 
-                var isWhite = _whitelist.Count != 0 && _whitelist.Any(x => bcc.Key.EndsWith(x.WhiteName) || bcc.Key == x.WhiteName);
+                var isWhite = false;
                 var isSkip = false;
-
-                if (isWhite)
+                if (_whitelist.Count > 0)
                 {
-                    foreach (var whitelist in _whitelist.Where(whitelist => bcc.Key.Contains(whitelist.WhiteName)))
+                    if (_whitelist.TryGetValue(bcc.Key, out var skip)) { isWhite = true; isSkip = skip; }
+                    else
                     {
-                        isSkip = whitelist.IsSkipConfirmation;
+                        var idx = bcc.Key.IndexOf("@", StringComparison.Ordinal);
+                        if (idx >= 0)
+                        {
+                            var domain = bcc.Key.Substring(idx);
+                            if (_whitelist.TryGetValue(domain, out var skipDom)) { isWhite = true; isSkip = skipDom; }
+                            else if (_whitelist.TryGetValue(domain.Substring(1), out var skipDomNoAt)) { isWhite = true; isSkip = skipDomNoAt; }
+                        }
                     }
                 }
 

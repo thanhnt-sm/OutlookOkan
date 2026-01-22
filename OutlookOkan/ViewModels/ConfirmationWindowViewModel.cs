@@ -72,11 +72,11 @@ namespace OutlookOkan.ViewModels
 
         public void ToggleSendButton()
         {
-            var isToAddressesCompleteChecked = ToAddresses.Count(x => x.IsChecked) == ToAddresses.Count;
-            var isCcAddressesCompleteChecked = CcAddresses.Count(x => x.IsChecked) == CcAddresses.Count;
-            var isBccAddressesCompleteChecked = BccAddresses.Count(x => x.IsChecked) == BccAddresses.Count;
-            var isAlertsCompleteChecked = Alerts.Count(x => x.IsChecked) == Alerts.Count;
-            var isAttachmentsCompleteChecked = Attachments.Count(x => x.IsChecked) == Attachments.Count;
+            var isToAddressesCompleteChecked = ToAddresses.All(x => x.IsChecked);
+            var isCcAddressesCompleteChecked = CcAddresses.All(x => x.IsChecked);
+            var isBccAddressesCompleteChecked = BccAddresses.All(x => x.IsChecked);
+            var isAlertsCompleteChecked = Alerts.All(x => x.IsChecked);
+            var isAttachmentsCompleteChecked = Attachments.All(x => x.IsChecked);
 
             if (isToAddressesCompleteChecked && isCcAddressesCompleteChecked && isBccAddressesCompleteChecked &&
                 isAlertsCompleteChecked && isAttachmentsCompleteChecked)

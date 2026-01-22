@@ -47,12 +47,10 @@ namespace OutlookOkan
         /// Cài đặt chung của add-in (ngôn ngữ, bật/tắt tính năng, v.v.)
         /// Được load từ file: %APPDATA%\Noraneko\OutlookOkan\GeneralSetting.csv
         /// </summary>
-        private readonly GeneralSetting _generalSetting = new GeneralSetting();
-
-        /// <summary>
-        /// Cài đặt bảo mật cho email nhận (kiểm tra SPF, DKIM, DMARC, v.v.)
-        /// Được load từ file: SecurityForReceivedMail.csv
-        /// </summary>
+        private GeneralSetting _generalSetting = new GeneralSetting();
+        private readonly SettingsService _settingsService = new SettingsService();
+        private DateTime _lastGeneralSettingLoadTime;
+        private readonly string _generalSettingPath = Path.Combine(CsvFileHandler.DirectoryPath, "GeneralSetting.csv");
         private readonly SecurityForReceivedMail _securityForReceivedMail = new SecurityForReceivedMail();
 
         /// <summary>
@@ -664,6 +662,13 @@ namespace OutlookOkan
         private void Application_ItemSend(object item, ref bool cancel)
         {
             // -----------------------------------------------------------------
+            // [NEW] FORCE UTF-8 ENCODING
+            // -----------------------------------------------------------------
+            // Bắt buộc sử dụng UTF-8 (Codepage 65001) cho tất cả email gửi đi
+            // để sửa lỗi font tiếng Việt khi gửi Lịch/Meeting sang đối tác.
+            ForceUtf8Encoding(item);
+
+            // -----------------------------------------------------------------
             // BƯỚC 0: KIỂM TRA CỬA SỔ OUTLOOK CÓ KHẢ DỤNG KHÔNG
             // -----------------------------------------------------------------
             try
@@ -712,13 +717,13 @@ namespace OutlookOkan
             // -----------------------------------------------------------------
 
             // Instantiate SettingsService to load all settings centrally
-            var settingsService = new SettingsService();
+            _settingsService.LoadSettings();
 
             // Cài đặt tự động thêm text vào body email
-            var autoAddMessageSetting = settingsService.AutoAddMessageSetting;
+            var autoAddMessageSetting = _settingsService.AutoAddMessageSetting;
 
             // Danh sách recipients cần tự động xóa (ví dụ: bcc mặc định)
-            var autoDeleteRecipients = settingsService.AutoDeleteRecipients ?? new List<AutoDeleteRecipient>();
+            var autoDeleteRecipients = _settingsService.AutoDeleteRecipients ?? new List<AutoDeleteRecipient>();
 
             // -----------------------------------------------------------------
             // BƯỚC 4: XỬ LÝ CHÍNH - TẠO CHECKLIST VÀ HIỆN XÁC NHẬN
@@ -792,7 +797,7 @@ namespace OutlookOkan
                         // ★ GỌI GENERATECHECKLIST - LOGIC CỐTLÕI ★
                         // Phân tích email và tạo danh sách cần kiểm tra
                         checklist = generateCheckList.GenerateCheckListFromMail(
-                            mailItem, _generalSetting, contacts, autoAddMessageSetting, settingsService);
+                            mailItem, _generalSetting, contacts, autoAddMessageSetting, _settingsService);
 
                         // Thêm cảnh báo nếu có recipient bị xóa tự động
                         if (isRemovedOfMailItem)
@@ -827,7 +832,7 @@ namespace OutlookOkan
 
                         type = typeof(Outlook.MeetingItem);
                         checklist = generateCheckList.GenerateCheckListFromMail(
-                            meetingItem, _generalSetting, contacts, autoAddMessageSetting, settingsService);
+                            meetingItem, _generalSetting, contacts, autoAddMessageSetting, _settingsService);
 
                         if (isRemovedOfMeetingItem)
                         {
@@ -851,7 +856,7 @@ namespace OutlookOkan
 
                         type = typeof(Outlook.TaskRequestItem);
                         checklist = generateCheckList.GenerateCheckListFromMail(
-                            taskRequestItem, _generalSetting, contacts, autoAddMessageSetting, settingsService);
+                            taskRequestItem, _generalSetting, contacts, autoAddMessageSetting, _settingsService);
                         break;
 
                     // ===== TASK REQUEST (KHÔNG BẬT XÁC NHẬN) =====
@@ -1001,6 +1006,16 @@ namespace OutlookOkan
         /// <param name="isLaunch">Có phải là lúc khởi động Outlook hay không</param>
         private void LoadGeneralSetting(bool isLaunch)
         {
+            if (!isLaunch)
+            {
+                if (!File.Exists(_generalSettingPath)) return;
+
+                var currentLastWriteTime = File.GetLastWriteTimeUtc(_generalSettingPath);
+                if (_lastGeneralSettingLoadTime == currentLastWriteTime) return;
+
+                _lastGeneralSettingLoadTime = currentLastWriteTime;
+            }
+
             var generalSetting = CsvFileHandler.ReadCsv<GeneralSetting>(typeof(GeneralSettingMap), "GeneralSetting.csv").ToList();
             if (generalSetting.Count == 0) return;
 
@@ -1169,6 +1184,43 @@ namespace OutlookOkan
 
             recipients.ResolveAll();
             return true;
+        }
+
+        /// <summary>
+        /// Bắt buộc set encoding là UTF-8 (65001) cho item để tránh lỗi font chữ.
+        /// Đặc biệt quan trọng đối với Tiếng Việt và các ngôn ngữ tượng hình.
+        /// </summary>
+        /// <param name="item">Outlook Item (Mail, Meeting, Appointment, Task)</param>
+        private void ForceUtf8Encoding(object item)
+        {
+            try
+            {
+                // 65001 = UTF-8 Code Page
+                const int UTF8_CODEPAGE = 65001;
+
+                if (item is Outlook.MailItem mail)
+                {
+                    mail.InternetCodepage = UTF8_CODEPAGE;
+                }
+                else if (item is Outlook.AppointmentItem appointment)
+                {
+                    appointment.InternetCodepage = UTF8_CODEPAGE;
+                }
+
+                // Mở rộng: Sử dụng PropertyAccessor để set PR_INTERNET_CPID (0x3FDE0003) nếu property trực tiếp không có
+                // PR_INTERNET_CPID = 0x3FDE0003
+                var propertyAccessor = ((dynamic)item).PropertyAccessor;
+                if (propertyAccessor != null)
+                {
+                    // 0x3FDE0003 = PidTagInternetCodepage
+                    propertyAccessor.SetProperty("http://schemas.microsoft.com/mapi/proptag/0x3FDE0003", UTF8_CODEPAGE);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Không throw exception để tránh block luồng gửi mail chính
+                System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Failed to Force UTF-8: {ex.Message}");
+            }
         }
 
         #region VSTO generated code
