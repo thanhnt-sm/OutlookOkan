@@ -1,137 +1,137 @@
-おかん for Outlook (メール誤送信防止アドイン)
+Okan cho Outlook (Add-in ngăn chặn gửi mail nhầm)
 ========
 
 English readme is [here](https://github.com/t-miyake/OutlookOkan/blob/master/README_en.md).
 
-おかん for Outlook (Outlook Okan)は、Microsoft Office Outlook用アドインです。  
+Okan cho Outlook (Outlook Okan) là một add-in dành cho Microsoft Office Outlook.  
 
-誤送信を防止するため、メールの送信前に確認ウィンドウを表示します。  
-おかんのように色々心配して確認してくれるアドインです。  
+Để ngăn chặn việc gửi nhầm, cửa sổ xác nhận sẽ hiển thị trước khi gửi mail.  
+Nó là một add-in sẽ lo lắng và kiểm tra giúp bạn giống như một người mẹ (Okan).  
 
-機密の関わるメールにおいて、完全なオープンソースのため、安心してご利用いただけます。  
-また、キーワードによる警告や、自動Cc/Bcc追加機能など、便利なオプション機能もあります。  
+Vì là mã nguồn mở hoàn toàn, bạn có thể yên tâm sử dụng ngay cả với các email liên quan đến thông tin mật.  
+Ngoài ra, add-in còn có các tính năng tùy chọn tiện lợi như cảnh báo bằng từ khóa, tự động thêm Cc/Bcc.  
 
-ダウンロードは[releases](https://github.com/t-miyake/OutlookOkan/releases)からできます。  
-※アドイン名を無難なものにしたバージョンも併せて配布しています。
+Bạn có thể tải xuống từ [releases](https://github.com/t-miyake/OutlookOkan/releases).  
+※ Chúng tôi cũng phân phối phiên bản có tên add-in trung tính (ít gây chú ý).
 
-オープンソースかつ無料でご利用いただけますが、無サポート、無保証です。([ライセンス](https://github.com/t-miyake/OutlookOkan/blob/master/LICENSE))  
-専用のカスタマイズやサポートが必要な場合は、個別にご相談ください。  
+Bạn có thể sử dụng miễn phí và là mã nguồn mở, nhưng không có hỗ trợ và không bảo hành. ([Giấy phép](https://github.com/t-miyake/OutlookOkan/blob/master/LICENSE))  
+Nếu bạn cần tùy chỉnh hoặc hỗ trợ riêng, vui lòng liên hệ trực tiếp.  
 
-送信前の確認ウインドウ  
+Cửa sổ xác nhận trước khi gửi  
 ![Screenshot 1](https://github.com/t-miyake/OutlookOkan/blob/master/Screenshots/Screenshot_v2.5.0_01.png)  
 
-設定ウィンドウ(一般設定)  
+Cửa sổ cài đặt (Cài đặt chung)  
 ![Screenshot 2](https://github.com/t-miyake/OutlookOkan/blob/master/Screenshots/Screenshot_v2.7.0_04.png)
 
-設定ウィンドウ(遅延送信)  
+Cửa sổ cài đặt (Gửi chậm)  
 ![Screenshot 3](https://github.com/t-miyake/OutlookOkan/blob/master/Screenshots/Screenshot_v2.7.0_05.png)
 
-送信禁止通知  
+Thông báo cấm gửi  
 ![Screenshot 4](https://github.com/t-miyake/OutlookOkan/blob/master/Screenshots/Screenshot_v2.5.0_03.png)
 
-バージョン情報  
+Thông tin phiên bản  
 ![Screenshot 5](https://github.com/t-miyake/OutlookOkan/blob/master/Screenshots/Screenshot_v2.6.1_02.png)
 
-## 対応環境
+## Môi trường hỗ trợ
 
 - Windows 7 / 8 / 8.1 / 10 / 11
-- Microsoft Outlook 2013 / 2016 / 2019 / 2021 / Microsoft 365 Apps (32bit版 及び 64bit版)
-- .NET Framework 4.6.2 以上
+- Microsoft Outlook 2013 / 2016 / 2019 / 2021 / Microsoft 365 Apps (bản 32bit và 64bit)
+- .NET Framework 4.6.2 trở lên
 
-## 機能一覧(概要)
+## Danh sách tính năng (Tổng quan)
 
-- メール送信前の確認など
-  - メール送信前に確認ウインドウを表示し、全ての項目にチェックしないと送信ができない仕様
-  - 内部(社内)ドメインへのメールなど、送信前の確認を表示しない設定も可能
-  - 外部(社外)ドメインは赤文字で表示
-  - 件名や送信者のアドレス、添付ファイルの一覧、メール本文を表示
-  - 添付ファイルの添付漏れや大容量の添付ファイルを警告
-  - 配布リストや連絡先グループを展開して、各宛先を表示 (オン/オフ可)
-  - 宛先をドメイン別に並べ替えて表示 (オン/オフ可)
-  - 送信元アドレスを常に自動でCcやBccに追加  (オン/オフ可)
+- Xác nhận trước khi gửi mail, v.v.
+  - Hiển thị cửa sổ xác nhận trước khi gửi mail, không thể gửi nếu không tích vào tất cả các mục.
+  - Có thể cài đặt để không hiển thị xác nhận đối với mail gửi nội bộ (trong công ty).
+  - Tên miền bên ngoài (ngoài công ty) được hiển thị màu đỏ.
+  - Hiển thị tiêu đề, địa chỉ người gửi, danh sách file đính kèm, nội dung mail.
+  - Cảnh báo nếu quên đính kèm file hoặc file đính kèm có dung lượng lớn.
+  - Mở rộng danh sách phân phối (Distribution List) hoặc nhóm liên hệ để hiển thị từng người nhận (Bật/Tắt).
+  - Sắp xếp hiển thị người nhận theo tên miền (Bật/Tắt).
+  - Luôn tự động thêm địa chỉ người gửi vào Cc hoặc Bcc (Bật/Tắt).
 
-- 送信禁止機能
-  - 指定した宛先やドメインへのメール送信を禁止
-  - 指定したキーワードが本文に含まれるメールの送信を禁止
-  - 指定した宛先やドメインへの添付ファイル付きメールの送信を禁止
-  - 添付ファイル付きメールの送信を禁止 (オン/オフ可)
-  - 連絡先に登録されていない宛先へのメール送信を禁止 (オン/オフ可)
-  - 宛先(To/Cc)外部ドメイン数が多い場合に、メールの送信を禁止 (オン/オフ可)
-  - 暗号化ZIPファイルが添付されいている場合に、メールの送信を禁止 (オン/オフ可)
-  - 送信禁止に該当する場合、禁止の旨とその理由を表示
+- Chức năng cấm gửi
+  - Cấm gửi mail đến các địa chỉ hoặc tên miền đã chỉ định.
+  - Cấm gửi mail nếu trong nội dung có chứa từ khóa đã chỉ định.
+  - Cấm gửi mail có file đính kèm đến các địa chỉ hoặc tên miền đã chỉ định.
+  - Cấm gửi mail có file đính kèm (Bật/Tắt).
+  - Cấm gửi mail đến các địa chỉ không có trong danh bạ (Bật/Tắt).
+  - Cấm gửi mail nếu số lượng tên miền bên ngoài trong danh sách nhận (To/Cc) quá nhiều (Bật/Tắt).
+  - Cấm gửi mail nếu có đính kèm file ZIP đã mã hóa (Bật/Tắt).
+  - Khi thuộc trường hợp cấm gửi, sẽ hiển thị thông báo cấm và lý do.
 
-- 許可リスト
-  - 許可リストに登録したドメインやアドレスは、確認画面での項目チェックが不要に
+- Danh sách cho phép (Whitelist)
+  - Các tên miền hoặc địa chỉ được đăng ký trong danh sách cho phép sẽ không cần kiểm tra các mục trong màn hình xác nhận.
 
-- 名称と送付先の登録と警告
-  - メール本文中に登場する名称と、送付先のアドレスやドメインが一致しない場合、警告を表示
+- Đăng ký tên và cảnh báo người nhận
+  - Hiển thị cảnh báo nếu tên xuất hiện trong nội dung mail không khớp với địa chỉ hoặc tên miền người nhận.
 
-- 警告キーワードの登録と警告
-  - 登録したキーワードがメール本文や件名に含まれる場合、登録した警告文を表示
-  - 常に登録した警告メッセージを表示することも可能
+- Đăng ký từ khóa cảnh báo và cảnh báo
+  - Nếu từ khóa đã đăng ký xuất hiện trong nội dung hoặc tiêu đề mail, sẽ hiển thị văn bản cảnh báo đã đăng ký.
+  - Cũng có thể cài đặt để luôn hiển thị tin nhắn cảnh báo đã đăng ký.
 
-- 警告アドレスの登録と警告
-  - 登録したアドレスやドメインへメールを送信する際に、警告文を表示  
-  - 警告文を宛先別に設定することも可能
+- Đăng ký địa chỉ cảnh báo và cảnh báo
+  - Hiển thị văn bản cảnh báo khi gửi mail đến địa chỉ hoặc tên miền đã đăng ký.  
+  - Có thể cài đặt văn bản cảnh báo riêng cho từng người nhận.
 
-- 宛先(To/Cc)の外部ドメイン数警告とBccへの自動変換
-  - 宛先(To/Cc)外部ドメイン数が多い場合の、警告表示
-  - 宛先(To/Cc)外部ドメイン数が多い場合の、宛先(To/Cc)外部アドレスのBccへの自動変換
-  - 強制的に全ての宛先をBccに変換
+- Cảnh báo số lượng tên miền bên ngoài (To/Cc) và tự động chuyển sang Bcc
+  - Hiển thị cảnh báo khi số lượng tên miền bên ngoài trong danh sách nhận (To/Cc) quá nhiều.
+  - Tự động chuyển đổi địa chỉ bên ngoài trong danh sách nhận (To/Cc) sang Bcc khi số lượng quá nhiều.
+  - Bắt buộc chuyển đổi tất cả người nhận sang Bcc.
 
-- 自動Cc/Bcc追加(キーワード)
-  - 指定したキーワードがメール本文に含まれる場合、指定したアドレスを自動でCcやBccに追加
+- Tự động thêm Cc/Bcc (Theo từ khóa)
+  - Nếu nội dung mail chứa từ khóa đã chỉ định, tự động thêm địa chỉ đã chỉ định vào Cc hoặc Bcc.
 
-- 自動Cc/Bcc追加(宛先)
-  - 指定した宛先へのメールに、指定したアドレスを自動でCCやBccに追加
+- Tự động thêm Cc/Bcc (Theo người nhận)
+  - Khi gửi mail đến người nhận đã chỉ định, tự động thêm địa chỉ đã chỉ định vào Cc hoặc Bcc.
 
-- 自動Cc/Bcc追加(添付ファイル)
-  - ファイルが添付されたメールに、指定したアドレスを自動でCcやBccに追加
+- Tự động thêm Cc/Bcc (Theo file đính kèm)
+  - Khi mail có file đính kèm, tự động thêm địa chỉ đã chỉ định vào Cc hoặc Bcc.
 
-- 送信遅延(送信保留)
-  - 設定した時間(分単位)だけ、メールの送信を遅延(保留)
-  - ドメインやメールアドレス毎に、デフォルトの遅延時間を設定可能
+- Gửi chậm (Trì hoãn gửi/Tạm giữ)
+  - Trì hoãn (tạm giữ) việc gửi mail trong khoảng thời gian đã cài đặt (tính bằng phút).
+  - Có thể cài đặt thời gian trì hoãn mặc định cho từng tên miền hoặc địa chỉ email.
 
-- 添付ファイル名と宛先の紐づけ
-  - 添付ファイル名と宛先メールアドレスやドメインを紐づけ、該当しない場合、警告を表示
+- Liên kết tên file đính kèm và người nhận
+  - Liên kết tên file đính kèm với địa chỉ email hoặc tên miền người nhận, nếu không khớp sẽ hiển thị cảnh báo.
 
-- 添付ファイルがある場合の宛先ごとの警告
-  - 宛先(アドレスやドメイン)ごとに、添付ファイルがある場合の警告文の設定が可能
+- Cảnh báo theo người nhận khi có file đính kèm
+  - Có thể cài đặt văn bản cảnh báo riêng cho từng người nhận (địa chỉ hoặc tên miền) khi mail có file đính kèm.
 
-- メール本文への文言の自動追加
-  - メール本文の文頭や末尾に、指定した文言を自動追加可能。
+- Tự động thêm văn bản vào nội dung mail
+  - Có thể tự động thêm văn bản đã chỉ định vào đầu hoặc cuối nội dung mail.
 
-- 簡易的な受信メールセキュリティ
-  受信したメールを開く際の機能
-  - 件名に指定したキーワードが含まれている場合の警告
-  - SPFレコードの検証に失敗した場合に警告を表示する。
-  - DKIMレコードの検証に失敗した場合に警告を表示する。
-  - 添付ファイルを開く前に警告する。
-  - 暗号化ZIPファイルを開く際に警告する。
-  - ZIP内に.lnkファイルがある場合に警告する。
-  - ZIP内に.oneファイルがある場合に警告する。
-  - ZIP内に.docm、xlsm、pptmファイルがある場合に警告する。
-  - マクロが含まれた添付ファイルを開く際に警告する。
+- Bảo mật mail nhận đơn giản
+  Các tính năng khi mở mail đã nhận:
+  - Cảnh báo nếu tiêu đề có chứa từ khóa đã chỉ định.
+  - Hiển thị cảnh báo nếu xác thực bản ghi SPF thất bại.
+  - Hiển thị cảnh báo nếu xác thực bản ghi DKIM thất bại.
+  - Cảnh báo trước khi mở file đính kèm.
+  - Cảnh báo khi mở file ZIP đã mã hóa.
+  - Cảnh báo nếu trong file ZIP có chứa file .lnk.
+  - Cảnh báo nếu trong file ZIP có chứa file .one.
+  - Cảnh báo nếu trong file ZIP có chứa file .docm, xlsm, pptm.
+  - Cảnh báo khi mở file đính kèm có chứa macro.
 
-- その他
-  - 暗号化ZIPファイルが添付されている場合に警告を表示  (オン/オフ可)
-  - 宛先の強制的なBCCへ変換
+- Khác
+  - Hiển thị cảnh báo nếu có đính kèm file ZIP đã mã hóa (Bật/Tắt).
+  - Bắt buộc chuyển đổi người nhận sang Bcc.
 
-- 設定のインポート/エクスポート
-  - 設定内容をCSVファイルでインポート/エクスポート
-  - 全設定の一括インポート/エクスポート
+- Nhập/Xuất cấu hình
+  - Nhập/Xuất nội dung cài đặt bằng file CSV.
+  - Nhập/Xuất tất cả cài đặt cùng lúc.
 
-- 多言語対応
-  - 日本語や英語など計10言語に対応しており、言語の追加が可能な設計
+- Đa ngôn ngữ
+  - Hỗ trợ tổng cộng 10 ngôn ngữ bao gồm tiếng Nhật và tiếng Anh, được thiết kế để có thể thêm ngôn ngữ mới.
 
-## 使い方
+## Cách sử dụng
 
-[Wiki(Manual)](https://github.com/t-miyake/OutlookOkan/wiki/Manual) に記載します。
+Chi tiết được ghi tại [Wiki(Manual)](https://github.com/t-miyake/OutlookOkan/wiki/Manual).
 
-## 既知の不具合
+## Các lỗi đã biết
 
-[Wiki(Known Issues)](https://github.com/t-miyake/OutlookOkan/wiki/Known-Issues) に記載します。
+Chi tiết được ghi tại [Wiki(Known Issues)](https://github.com/t-miyake/OutlookOkan/wiki/Known-Issues).
 
-## ロードマップ
+## Lộ trình phát triển
 
-[Wiki(Roadmap)](https://github.com/t-miyake/OutlookOkan/wiki/Roadmap) に記載します。
+Chi tiết được ghi tại [Wiki(Roadmap)](https://github.com/t-miyake/OutlookOkan/wiki/Roadmap).

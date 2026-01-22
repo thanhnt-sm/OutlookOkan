@@ -263,6 +263,7 @@ Add-in hỗ trợ **10 ngôn ngữ** thông qua `ResourceService`:
 
 - 🇯🇵 Tiếng Nhật (mặc định)
 - 🇺🇸 Tiếng Anh
+- 🇻🇳 Tiếng Việt
 - 🇨🇳 Tiếng Trung (Giản thể & Phồn thể)
 - 🇰🇷 Tiếng Hàn
 - 🇩🇪 Tiếng Đức

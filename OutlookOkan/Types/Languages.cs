@@ -18,6 +18,7 @@ namespace OutlookOkan.Types
             Language.Add(new LanguageCodeAndName { LanguageNumber = 7, LanguageName = "Deutsch [German] Beta", LanguageCode = "de-DE" });
             Language.Add(new LanguageCodeAndName { LanguageNumber = 8, LanguageName = "한국어 [Korean] Beta", LanguageCode = "ko-KR" });
             Language.Add(new LanguageCodeAndName { LanguageNumber = 9, LanguageName = "ไทย [Thai] Beta", LanguageCode = "th-TH" });
+            Language.Add(new LanguageCodeAndName { LanguageNumber = 10, LanguageName = "Tiếng Việt [Vietnamese] Beta", LanguageCode = "vi-VN" });
         }
     }
 

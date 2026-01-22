@@ -1,0 +1,949 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="About" xml:space="preserve">
+    <value>Giới thiệu</value>
+  </data>
+  <data name="AlertKeyword" xml:space="preserve">
+    <value>Từ khóa cảnh báo</value>
+  </data>
+  <data name="AlertKeywordInfo" xml:space="preserve">
+    <value>Các từ khóa để cảnh báo</value>
+  </data>
+  <data name="AlertMailAddress" xml:space="preserve">
+    <value>Người nhận cảnh báo</value>
+  </data>
+  <data name="AlertMailAddressAndDomain" xml:space="preserve">
+    <value>Người nhận hoặc miền cảnh báo</value>
+  </data>
+  <data name="ApplicableDestination" xml:space="preserve">
+    <value>Người nhận áp dụng</value>
+  </data>
+  <data name="ApplicableKeywords" xml:space="preserve">
+    <value>Từ khóa áp dụng</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>Áp dụng</value>
+  </data>
+  <data name="AppName" xml:space="preserve">
+    <value>OutlookOkan</value>
+  </data>
+  <data name="Attachments" xml:space="preserve">
+    <value>Tệp đính kèm</value>
+  </data>
+  <data name="AutoAddCCorBCCByKeyword" xml:space="preserve">
+    <value>Tự động thêm Cc/Bcc (theo từ khóa)</value>
+  </data>
+  <data name="AutoAddCCorBCCByKeywordInfo" xml:space="preserve">
+    <value>Các từ khóa tự động thêm Cc hoặc Bcc.</value>
+  </data>
+  <data name="AutoAddCCorBCCByMailAddressOrDomain" xml:space="preserve">
+    <value>Tự động thêm Cc/Bcc (theo người nhận)</value>
+  </data>
+  <data name="AutoAddCCorBCCByMailAddressOrDomainInfo" xml:space="preserve">
+    <value>Người nhận hoặc miền tự động thêm Cc hoặc Bcc.</value>
+  </data>
+  <data name="AutoAddDestination" xml:space="preserve">
+    <value>Đã thêm tự động.</value>
+  </data>
+  <data name="AutoAddMailAddress" xml:space="preserve">
+    <value>Tự động thêm người nhận.</value>
+  </data>
+  <data name="AutoCheckConfig" xml:space="preserve">
+    <value>Cài đặt tự động kiểm tra</value>
+  </data>
+  <data name="AutoCheckSameDomain" xml:space="preserve">
+    <value>Các người nhận thuộc miền nội bộ sẽ được tự động kiểm tra.</value>
+  </data>
+  <data name="CSVImportAlert" xml:space="preserve">
+    <value>Không nhập tệp CSV có định dạng sai.</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Hủy bỏ</value>
+  </data>
+  <data name="CCorBCC" xml:space="preserve">
+    <value>Cc/Bcc</value>
+  </data>
+  <data name="ChangeLanguage" xml:space="preserve">
+    <value>Thay đổi ngôn ngữ hiển thị</value>
+  </data>
+  <data name="Confirmation" xml:space="preserve">
+    <value>Xác nhận trước khi gửi email.</value>
+  </data>
+  <data name="ConfirmationMessage1" xml:space="preserve">
+    <value>Bạn có muốn gửi email này không?</value>
+  </data>
+  <data name="ConfirmationMessage2" xml:space="preserve">
+    <value>Sau khi kiểm tra tất cả các mục, bạn có thể nhấn nút gửi.</value>
+  </data>
+  <data name="CSVExport" xml:space="preserve">
+    <value>Xuất CSV</value>
+  </data>
+  <data name="CSVImport" xml:space="preserve">
+    <value>Nhập CSV</value>
+  </data>
+  <data name="DestinationEmailaddress" xml:space="preserve">
+    <value>Người nhận</value>
+  </data>
+  <data name="Domain" xml:space="preserve">
+    <value>Tên miền</value>
+  </data>
+  <data name="DoNotShowConfirmationScreen" xml:space="preserve">
+    <value>Bỏ qua cửa sổ xác nhận</value>
+  </data>
+  <data name="ExportFailed" xml:space="preserve">
+    <value>Xuất thất bại.</value>
+  </data>
+  <data name="FailedToGetInformation" xml:space="preserve">
+    <value>Không thể lấy thông tin.</value>
+  </data>
+  <data name="ForgottenToAttachAlert" xml:space="preserve">
+    <value>Có từ "tệp đính kèm" trong văn bản, nhưng không có tệp đính kèm nào.</value>
+  </data>
+  <data name="General" xml:space="preserve">
+    <value>Chung</value>
+  </data>
+  <data name="Help" xml:space="preserve">
+    <value>Trợ giúp</value>
+  </data>
+  <data name="HowToDeleteRow" xml:space="preserve">
+    <value>* Xóa dòng: Chọn dòng và nhấn phím Delete.</value>
+  </data>
+  <data name="HTML" xml:space="preserve">
+    <value>HTML</value>
+  </data>
+  <data name="IfAllSameDomain" xml:space="preserve">
+    <value>Nếu tất cả miền của người nhận là miền nội bộ, bỏ qua cửa sổ xác nhận.</value>
+  </data>
+  <data name="IfAllWhite" xml:space="preserve">
+    <value>Nếu không có mục tiêu kiểm tra nào trong người nhận, bỏ qua cửa sổ xác nhận.
+(ví dụ: nếu tất cả người nhận đều nằm trong danh sách cho phép.)</value>
+  </data>
+  <data name="ImportAndExport" xml:space="preserve">
+    <value>Nhập/Xuất</value>
+  </data>
+  <data name="ImportantAlert" xml:space="preserve">
+    <value>Cảnh báo quan trọng.</value>
+  </data>
+  <data name="ImportFailed" xml:space="preserve">
+    <value>Nhập thất bại.</value>
+  </data>
+  <data name="InputCCorBCC" xml:space="preserve">
+    <value>Nhập "Cc" hoặc "Bcc".</value>
+  </data>
+  <data name="InputDomainInfo" xml:space="preserve">
+    <value>Nhập miền từ @.</value>
+  </data>
+  <data name="InputMailaddressOrDomain" xml:space="preserve">
+    <value>Nhập địa chỉ email hoặc miền.</value>
+  </data>
+  <data name="InputNameInfo" xml:space="preserve">
+    <value>Nhập tên. (ví dụ: Tên công ty)</value>
+  </data>
+  <data name="IsAlertAddressBccAlert" xml:space="preserve">
+    <value>Người nhận (Bcc) chứa địa chỉ hoặc miền đã được đăng ký là cảnh báo.</value>
+  </data>
+  <data name="IsAlertAddressCcAlert" xml:space="preserve">
+    <value>Người nhận (Cc) chứa địa chỉ hoặc miền đã được đăng ký là cảnh báo.</value>
+  </data>
+  <data name="IsAlertAddressMaybeIrrelevant" xml:space="preserve">
+    <value>Người nhận này có thể không liên quan đến đích đến dự kiến.</value>
+  </data>
+  <data name="IsAlertAddressToAlert" xml:space="preserve">
+    <value>Người nhận (To) chứa địa chỉ hoặc miền đã được đăng ký là cảnh báo.</value>
+  </data>
+  <data name="IsAttachedExe" xml:space="preserve">
+    <value>Một tệp thực thi (.exe) được đính kèm.</value>
+  </data>
+  <data name="IsBigAttachedFile" xml:space="preserve">
+    <value>Có tệp lớn hơn 10Mbyte được đính kèm vào email này.</value>
+  </data>
+  <data name="Keyword" xml:space="preserve">
+    <value>Từ khóa</value>
+  </data>
+  <data name="MailBody" xml:space="preserve">
+    <value>Nội dung thư (Văn bản thuần tú)</value>
+  </data>
+  <data name="MailAddressAndDomain" xml:space="preserve">
+    <value>Địa chỉ/miền người nhận</value>
+  </data>
+  <data name="MailInfo" xml:space="preserve">
+    <value>Thông tin thư</value>
+  </data>
+  <data name="MailType" xml:space="preserve">
+    <value>Loại</value>
+  </data>
+  <data name="Name" xml:space="preserve">
+    <value>Tên</value>
+  </data>
+  <data name="NameAndDomain" xml:space="preserve">
+    <value>Tên và miền người nhận liên quan</value>
+  </data>
+  <data name="NoAlert" xml:space="preserve">
+    <value>Không có cảnh báo quan trọng nào.</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="RichText" xml:space="preserve">
+    <value>Văn bản có định dạng (Rich-text)</value>
+  </data>
+  <data name="SaveSettings" xml:space="preserve">
+    <value>Các cài đặt đã được cập nhật.</value>
+  </data>
+  <data name="SelectCSVFile" xml:space="preserve">
+    <value>Chọn một tệp CSV.</value>
+  </data>
+  <data name="SelectSaveDestination" xml:space="preserve">
+    <value>Chọn nơi bạn muốn lưu.</value>
+  </data>
+  <data name="Send" xml:space="preserve">
+    <value>Gửi</value>
+  </data>
+  <data name="Sender" xml:space="preserve">
+    <value>Người gửi</value>
+  </data>
+  <data name="SendingForbid" xml:space="preserve">
+    <value>Cấm gửi</value>
+  </data>
+  <data name="SendingForbidInfo" xml:space="preserve">
+    <value>Nếu bạn chọn ô này, bạn không thể gửi email đến người nhận hoặc bao gồm từ khóa đó.</value>
+  </data>
+  <data name="SettingExample" xml:space="preserve">
+    <value>Ví dụ về cài đặt.</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Cài đặt</value>
+  </data>
+  <data name="Subject" xml:space="preserve">
+    <value>Chủ đề</value>
+  </data>
+  <data name="SuccessfulExport" xml:space="preserve">
+    <value>Việc xuất đã hoàn tất.</value>
+  </data>
+  <data name="SuccessfulImport" xml:space="preserve">
+    <value>Việc nhập đã hoàn tất.</value>
+  </data>
+  <data name="Text" xml:space="preserve">
+    <value>Văn bản thuần tú</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>Không xác định</value>
+  </data>
+  <data name="WarningText" xml:space="preserve">
+    <value>Văn bản cảnh báo</value>
+  </data>
+  <data name="WarningTextInfo" xml:space="preserve">
+    <value>Văn bản cảnh báo trên cửa sổ xác nhận.</value>
+  </data>
+  <data name="WhiteList" xml:space="preserve">
+    <value>Danh sách cho phép</value>
+  </data>
+  <data name="CompanyName" xml:space="preserve">
+    <value>Noraneko Inc.</value>
+  </data>
+  <data name="Copyright" xml:space="preserve">
+    <value>Bản quyền (C) 2024 Noraneko Inc.</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>Phiên bản 2.8.2</value>
+  </data>
+  <data name="VersionInfo" xml:space="preserve">
+    <value>Giới thiệu</value>
+  </data>
+  <data name="SendingForbidAddress" xml:space="preserve">
+    <value>Người nhận bị cấm.</value>
+  </data>
+  <data name="SettingExampleAlertKeyword" xml:space="preserve">
+    <value>Từ khóa: Mật
+Văn bản cảnh báo: Nó bao gồm cụm từ "Mật".
+
+Đăng ký các từ khóa cần cảnh báo và văn bản cảnh báo của chúng.
+
+Nếu từ khóa có trong nội dung, bạn có thể hiển thị cảnh báo hoặc cấm gửi email đó.
+
+Nếu văn bản cảnh báo để trống, màn hình xác nhận sẽ hiển thị văn bản cảnh báo mặc định.</value>
+  </data>
+  <data name="SettingExampleAlertMailAddress" xml:space="preserve">
+    <value>Địa chỉ email: info@noraneko.co.jp
+hoặc
+Miền: @noraneko.co.jp
+
+Đăng ký địa chỉ email hoặc miền và văn bản cảnh báo của chúng.
+
+Nếu bạn gửi email đến địa chỉ email hoặc miền mà bạn đã đăng ký tại đây, bạn sẽ nhận được cảnh báo trước.
+
+Nếu văn bản cảnh báo để trống, màn hình xác nhận sẽ hiển thị văn bản cảnh báo mặc định.</value>
+  </data>
+  <data name="SettingExampleAutoAddCCorBCCByKeyword" xml:space="preserve">
+    <value>Loại: Cc hoặc Bcc
+Từ khóa: Mật
+Địa chỉ email: boss@noraneko.co.jp
+
+Khi các từ khóa có trong thư, địa chỉ được chỉ định sẽ tự động được thêm vào Cc hoặc Bcc.</value>
+  </data>
+  <data name="SettingExampleAutoAddCCorBCCByMailAddressOrDomain" xml:space="preserve">
+    <value>Loại: Cc hoặc Bcc
+Đến: warning@xxxxxxx.com
+Địa chỉ email: boss@noraneko.co.jp
+
+Khi gửi thư đến người nhận và miền đã đăng ký, địa chỉ được chỉ định sẽ tự động được thêm vào Cc hoặc Bcc.</value>
+  </data>
+  <data name="SettingExampleNameAndDomain" xml:space="preserve">
+    <value>Tên: Noraneko Inc
+Miền: @noraneko.co.jp
+
+Đăng ký tên (ví dụ: Tên công ty) và miền.
+
+Hiển thị cảnh báo nếu tên trong nội dung email và miền của người nhận không khớp.
+
+*Chủ đề cũng có thể được đưa vào kiểm tra.</value>
+  </data>
+  <data name="SettingExampleWhiteList" xml:space="preserve">
+    <value>Địa chỉ email: info@noraneko.co.jp
+hoặc
+Miền: @noraneko.co.jp
+
+Đăng ký địa chỉ email hoặc miền.
+
+Các người nhận liên quan sẽ được kiểm tra trước trong màn hình xác nhận.</value>
+  </data>
+  <data name="ChangeRibbonLanguageInfo" xml:space="preserve">
+    <value>Ngôn ngữ hiển thị của ruy-băng (menu) được cập nhật khi Outlook được khởi động lại.</value>
+  </data>
+  <data name="IsCanNotShowConfirmation" xml:space="preserve">
+    <value>Không thể hiển thị cửa sổ xác nhận.</value>
+  </data>
+  <data name="SendMailConfirmation" xml:space="preserve">
+    <value>Bạn có muốn gửi email này không?</value>
+  </data>
+  <data name="IsShowConfirmationToMultipleDomain" xml:space="preserve">
+    <value>Nếu người nhận chứa nhiều tên miền bên ngoài, hiển thị cửa sổ xác nhận.
+(Không bỏ qua cửa sổ xác nhận.)</value>
+  </data>
+  <data name="IsSkipConfirmation" xml:space="preserve">
+    <value>Bỏ qua cửa sổ xác nhận.</value>
+  </data>
+  <data name="IsSkipConfirmationInfo" xml:space="preserve">
+    <value>Bỏ qua cửa sổ xác nhận khi bạn chỉ gửi email đến những người nhận đã chọn.</value>
+  </data>
+  <data name="SentOnBehalf" xml:space="preserve">
+    <value>Gửi thay mặt hoặc Gửi dưới dạng.</value>
+  </data>
+  <data name="DeferredDelivery" xml:space="preserve">
+    <value>Gửi chậm</value>
+  </data>
+  <data name="DeferredDeliveryMinutes" xml:space="preserve">
+    <value>Thời gian gửi chậm.(phút)</value>
+  </data>
+  <data name="EnableForgottenToAttachAlert" xml:space="preserve">
+    <value>Nếu có câu "tập tin đính kèm" trong văn bản và không có tập tin đính kèm, hãy cảnh báo về điều đó.</value>
+  </data>
+  <data name="DeferredDeliveryEmailAddressOrDomainInfo" xml:space="preserve">
+    <value>Nhập địa chỉ email hoặc miền bạn muốn gửi chậm.</value>
+  </data>
+  <data name="DeferredDeliveryTime" xml:space="preserve">
+    <value>Thời gian gửi chậm.(phút)</value>
+  </data>
+  <data name="InputDeferredDeliveryTime" xml:space="preserve">
+    <value>Nhập thời gian hoãn bằng phút.</value>
+  </data>
+  <data name="SettingExampleDeferredDelivery" xml:space="preserve">
+    <value>Địa chỉ email: info@noraneko.co.jp
+hoặc
+Miền: @noraneko.co.jp
+
+Đăng ký địa chỉ email hoặc miền của bạn và đăng ký thời gian hoãn theo phút.
+
+* Nếu bạn chỉ đăng ký @, bạn có thể đăng ký thời gian hoãn tiêu chuẩn cho tất cả các thư.
+
+* Nếu đáp ứng nhiều điều kiện, thời gian hoãn dài nhất sẽ được áp dụng.</value>
+  </data>
+  <data name="ContactGroup" xml:space="preserve">
+    <value>Nhóm liên hệ</value>
+  </data>
+  <data name="AutoCheckMembersAddress" xml:space="preserve">
+    <value>Địa chỉ email của các thành viên sẽ được tự động kiểm tra.</value>
+  </data>
+  <data name="GetMembersOfTheContactGroup" xml:space="preserve">
+    <value>Hiển thị các thành viên của Nhóm liên hệ.</value>
+  </data>
+  <data name="GetMembersOfTheExDistList" xml:space="preserve">
+    <value>Hiển thị các thành viên của danh sách phân phối Exchange. (Có thể mất nhiều thời gian.)</value>
+  </data>
+  <data name="GetMembersOfTheList" xml:space="preserve">
+    <value>Hiển thị các thành viên của danh sách phân phối Exchange hoặc Nhóm liên hệ</value>
+  </data>
+  <data name="CanGetNewVersion" xml:space="preserve">
+    <value>Có phiên bản mới của add-in này.
+Bạn có muốn tải xuống không?</value>
+  </data>
+  <data name="CheckNewVersion" xml:space="preserve">
+    <value>Kiểm tra phiên bản mới.</value>
+  </data>
+  <data name="YouHaveLatest" xml:space="preserve">
+    <value>Add-in này là phiên bản mới nhất.</value>
+  </data>
+  <data name="AutoAddCCorBCCByAttachedFile" xml:space="preserve">
+    <value>Tự động thêm Cc/Bcc (theo tệp đính kèm)</value>
+  </data>
+  <data name="IsNotTreatedAsAttachmentsAtHtmlEmbeddedFiles" xml:space="preserve">
+    <value>Tệp được nhúng trong thư HTML không được coi là tệp đính kèm.</value>
+  </data>
+  <data name="SettingExampleAutoAddCCorBCCByAttachedFile" xml:space="preserve">
+    <value>Loại: Cc hoặc Bcc
+Địa chỉ email: boss@noraneko.co.jp
+
+Khi bạn gửi email có tệp đính kèm, địa chỉ được chỉ định sẽ tự động được thêm vào Cc hoặc Bcc.</value>
+  </data>
+  <data name="CanceledSendingMail" xml:space="preserve">
+    <value>Đã hủy gửi email này.</value>
+  </data>
+  <data name="CanceledSendingMailMessage" xml:space="preserve">
+    <value>Đã hủy gửi email này. Bạn có thể chỉnh sửa lại.
+Thời gian dự kiến gửi email này đã bị xóa.
+
+Để gửi email này, bạn phải nhấp vào nút Gửi.
+Đóng màn hình chỉnh sửa sẽ không gửi email này.</value>
+  </data>
+  <data name="InputDomain" xml:space="preserve">
+    <value>Nhập miền.</value>
+  </data>
+  <data name="InternalDomain" xml:space="preserve">
+    <value>Miền nội bộ</value>
+  </data>
+  <data name="SettingExampleInternalDomainList" xml:space="preserve">
+    <value>Miền: @noraneko.co.jp
+
+Đăng ký miền được xử lý như một miền nội bộ (công ty).
+
+Miền của địa chỉ email người gửi luôn được coi là miền nội bộ.</value>
+  </data>
+  <data name="ExclusionSettings" xml:space="preserve">
+    <value>Cài đặt loại trừ</value>
+  </data>
+  <data name="IsDoNotUseXIfAllRecipientsAreInternalDomain" xml:space="preserve">
+    <value>Vô hiệu hóa tính năng này nếu miền của người nhận đều là miền nội bộ.</value>
+  </data>
+  <data name="BasicSettings" xml:space="preserve">
+    <value>Cài đặt cơ bản</value>
+  </data>
+  <data name="ExternalDomainsWarningAndAutoChangeToBcc" xml:space="preserve">
+    <value>Cảnh báo miền bên ngoài và
+tự động chuyển sang Bcc</value>
+  </data>
+  <data name="IsAutoChangeToBccWhenLargeNumberOfExternalDomains" xml:space="preserve">
+    <value>Người nhận bên ngoài của To và Cc sẽ tự động chuyển đổi thành Bcc
+khi người nhận (To/Cc) có số lượng lớn miền bên ngoài.</value>
+  </data>
+  <data name="IsProhibitedWhenLargeNumberOfExternalDomains" xml:space="preserve">
+    <value>Cấm gửi khi người nhận (To/Cc) có số lượng lớn miền bên ngoài.</value>
+  </data>
+  <data name="IsWarningWhenLargeNumberOfExternalDomains" xml:space="preserve">
+    <value>Hiển thị cảnh báo khi người nhận (To/Cc) có số lượng lớn tên miền bên ngoài.</value>
+  </data>
+  <data name="SettingExampleExternalDomainsWarningAndAutoChangeToBcc" xml:space="preserve">
+    <value>Đặt số lượng tên miền bên ngoài được sử dụng làm cơ sở cho cảnh báo và tự động thay đổi thành Bcc, và bật hoặc tắt từng cái.
+
+Nếu To không tồn tại sau khi tự động thay đổi thành Bcc, địa chỉ của người gửi sẽ tự động được thêm vào To.
+
+Cũng có thể buộc tất cả người nhận chuyển đổi thành Bcc.</value>
+  </data>
+  <data name="TargetToAndCcExternalDomainsNum" xml:space="preserve">
+    <value>Số lượng tên miền bên ngoài của người nhận (To/Cc) được áp dụng tính năng này.</value>
+  </data>
+  <data name="TargetToAndCcExternalDomainsNumInfo" xml:space="preserve">
+    <value>* Nếu tên miền bên ngoài có trong To và Cc của email lớn hơn hoặc bằng cài đặt này, tính năng này sẽ được áp dụng.</value>
+  </data>
+  <data name="AutoAddSendersAddressToAlert" xml:space="preserve">
+    <value>Địa chỉ Email của người gửi đã được tự động thêm vào To. (vì To không còn tồn tại do tự động thay đổi thành Bcc.)</value>
+  </data>
+  <data name="ExternalDomainsChangeToBccAlert" xml:space="preserve">
+    <value>Vì các tên miền bên ngoài của To và Cc vượt quá ngưỡng, người nhận tên miền bên ngoài đã được thay đổi thành Bcc.</value>
+  </data>
+  <data name="LargeNumberOfExternalDomainAlert" xml:space="preserve">
+    <value>Số lượng tên miền bên ngoài trong To và Cc cao hơn ngưỡng. Vui lòng xác nhận lại ưu và nhược điểm của việc gửi.</value>
+  </data>
+  <data name="ProhibitedWhenLargeNumberOfExternalDomainsAlert" xml:space="preserve">
+    <value>Số lượng tên miền bên ngoài trong To và Cc vượt quá ngưỡng.</value>
+  </data>
+  <data name="DefaultAlertMessage" xml:space="preserve">
+    <value>Từ khóa cảnh báo có trong nội dung email.</value>
+  </data>
+  <data name="IsEnableRecipientsAreSortedByDomain" xml:space="preserve">
+    <value>Người nhận được sắp xếp theo miền trên màn hình xác nhận.</value>
+  </data>
+  <data name="AttachedIsAnEncryptedZipFile" xml:space="preserve">
+    <value>Đính kèm là một tệp ZIP được mã hóa.</value>
+  </data>
+  <data name="EncryptedZipBeta" xml:space="preserve">
+    <value>Cảnh báo đính kèm tệp Zip được mã hóa</value>
+  </data>
+  <data name="IsEnableAllAttachedFilesAreDetectEncryptedZip" xml:space="preserve">
+    <value>Các tệp đính kèm có phần mở rộng khác ".zip" cũng phát hiện xem chúng có phải là ZIP được mã hóa hay không.</value>
+  </data>
+  <data name="IsProhibitedWhenEncryptedZipIsAttached" xml:space="preserve">
+    <value>Cấm gửi khi tệp ZIP được mã hóa được đính kèm.</value>
+  </data>
+  <data name="IsWarningWhenEncryptedZipIsAttached" xml:space="preserve">
+    <value>Hiển thị cảnh báo khi tệp ZIP được mã hóa được đính kèm.</value>
+  </data>
+  <data name="NoticeOfIsEnableAllAttachedFilesAreDetectEncryptedZip" xml:space="preserve">
+    <value>* Việc xử lý email có tệp đính kèm có thể mất nhiều thời gian hơn.</value>
+  </data>
+  <data name="SettingExampleAttachments" xml:space="preserve">
+    <value>Bạn có thể ngăn không cho gửi email có tệp đính kèm hoặc hiển thị cảnh báo khuyên bạn nên đính kèm tệp dưới dạng liên kết.
+
+Bạn cũng có thể hiển thị cảnh báo hoặc cấm gửi email khi tệp ZIP được mã hóa (tệp ZIP có mật khẩu) được đính kèm.</value>
+  </data>
+  <data name="ExternalRecipient" xml:space="preserve">
+    <value>Người nhận bên ngoài</value>
+  </data>
+  <data name="AlwaysAddTheSendersAddressToBcc" xml:space="preserve">
+    <value>Luôn tự động thêm địa chỉ của người gửi vào Bcc.</value>
+  </data>
+  <data name="AlertKeywordForBody" xml:space="preserve">
+    <value>Từ khóa cảnh báo (Nội dung)</value>
+  </data>
+  <data name="AlertKeywordForSubject" xml:space="preserve">
+    <value>Từ khóa cảnh báo (Chủ đề)</value>
+  </data>
+  <data name="SettingExampleAlertKeywordForSubject" xml:space="preserve">
+    <value>Từ khóa: Mật
+Văn bản cảnh báo: Nó bao gồm cụm từ "Mật".
+
+Đăng ký các từ khóa cần cảnh báo và văn bản cảnh báo của chúng.
+
+Nếu từ khóa có trong chủ đề, bạn có thể hiển thị cảnh báo hoặc cấm gửi email đó.
+
+Nếu văn bản cảnh báo để trống, màn hình xác nhận sẽ hiển thị văn bản cảnh báo mặc định.</value>
+  </data>
+  <data name="DistributionList" xml:space="preserve">
+    <value>Danh sách phân phối</value>
+  </data>
+  <data name="IsAutoCheckRegisteredInContacts" xml:space="preserve">
+    <value>Người nhận đã đăng ký trong Danh bạ sẽ được tự động kiểm tra. (Có thể mất nhiều thời gian.)</value>
+  </data>
+  <data name="IsAutoCheckRegisteredInContactsAndMemberOfContactLists" xml:space="preserve">
+    <value>Bao gồm những người nhận đã đăng ký là thành viên của danh sách liên hệ.
+(Nếu bạn có nhiều nhóm liên hệ, quá trình này có thể mất nhiều thời gian hơn.)</value>
+  </data>
+  <data name="AttachmentsKeyword" xml:space="preserve">
+    <value>tệp đính kèm</value>
+  </data>
+  <data name="IsAttachmentsProhibited" xml:space="preserve">
+    <value>Cấm gửi khi tệp được đính kèm.</value>
+  </data>
+  <data name="IsWarningWhenAttachedRealFile" xml:space="preserve">
+    <value>Nếu một tệp được đính kèm, nên đính kèm nó dưới dạng liên kết trên cửa sổ xác nhận.</value>
+  </data>
+  <data name="AttachmentProhibitedRecipients" xml:space="preserve">
+    <value>Người nhận bị cấm đính kèm</value>
+  </data>
+  <data name="AttachmentsName" xml:space="preserve">
+    <value>Tên tệp đính kèm/Từ khóa</value>
+  </data>
+  <data name="RecipientsAndAttachmentsName" xml:space="preserve">
+    <value>Tên người nhận và tên tệp đính kèm liên quan</value>
+  </data>
+  <data name="SettingExampleAttachmentProhibitedRecipients" xml:space="preserve">
+    <value>Địa chỉ email: info@noraneko.co.jp
+hoặc
+Miền: @noraneko.co.jp
+
+Đăng ký địa chỉ email hoặc miền.
+
+Bạn sẽ không thể gửi email có tệp đính kèm đến những người nhận đó.</value>
+  </data>
+  <data name="SettingExampleRecipientsAndAttachmentsName" xml:space="preserve">
+    <value>Địa chỉ email: info@noraneko.co.jp
+hoặc
+Miền: @noraneko.co.jp
+Tên tệp đính kèm/Từ khóa: Hóa đơn cho Noraneko
+
+Đăng ký địa chỉ email hoặc miền và tên tệp đính kèm hoặc từ khóa đính kèm.
+
+Nếu người nhận và tên tệp đính kèm không khớp, cảnh báo sẽ được hiển thị.</value>
+  </data>
+  <data name="RecommendationOfAttachFileAsLink" xml:space="preserve">
+    <value>Khuyên bạn nên đính kèm tệp dưới dạng liên kết.</value>
+  </data>
+  <data name="AttachmentProhibitedRecipientsMessage" xml:space="preserve">
+    <value>Người nhận này bị cấm gửi tệp đính kèm.</value>
+  </data>
+  <data name="AttachmentsProhibitedMessage" xml:space="preserve">
+    <value>Cấm gửi e-mail có tệp đính kèm.</value>
+  </data>
+  <data name="RecipientsAndAttachmentsNameMessage" xml:space="preserve">
+    <value>Người nhận và tệp đính kèm không liên quan.</value>
+  </data>
+  <data name="Bcc" xml:space="preserve">
+    <value>Bcc</value>
+  </data>
+  <data name="Cc" xml:space="preserve">
+    <value>Cc</value>
+  </data>
+  <data name="To" xml:space="preserve">
+    <value>To</value>
+  </data>
+  <data name="CanNotFindTheLinkedName" xml:space="preserve">
+    <value>Không thể tìm thấy tên liên kết trong nội dung thư.</value>
+  </data>
+  <data name="IsCheckNameAndDomainsFromRecipients" xml:space="preserve">
+    <value>Cảnh báo cũng được hiển thị khi không có tên người nhận trong nội dung thư.</value>
+  </data>
+  <data name="AddressBook" xml:space="preserve">
+    <value>Danh bạ</value>
+  </data>
+  <data name="IsProhibitsSendingMailIfRecipientsIsNotRegistered" xml:space="preserve">
+    <value>Cấm gửi thư nếu người nhận không được đăng ký trong Danh bạ.</value>
+  </data>
+  <data name="IsWarningIfRecipientsIsNotRegistered" xml:space="preserve">
+    <value>Nếu người nhận không được đăng ký trong danh bạ, cảnh báo sẽ được hiển thị trên cửa sổ xác nhận.</value>
+  </data>
+  <data name="ProhibitsSendingMailIfRecipientsIsNotRegisteredMessage" xml:space="preserve">
+    <value>Cấm gửi e-mail đến một liên hệ chưa đăng ký.</value>
+  </data>
+  <data name="SendersDomainAndInternalDomainAreNotCovered" xml:space="preserve">
+    <value>*Cả miền của người nhận và miền nội bộ đều không được bao gồm.</value>
+  </data>
+  <data name="WarningIfRecipientsIsNotRegisteredMessage" xml:space="preserve">
+    <value>Địa chỉ này chưa được đăng ký trong Danh bạ của bạn.</value>
+  </data>
+  <data name="MeetingRequest" xml:space="preserve">
+    <value>Yêu cầu cuộc họp</value>
+  </data>
+  <data name="ShowConfirmationAtSendMeetingRequest" xml:space="preserve">
+    <value>Màn hình xác nhận cũng được hiển thị cho yêu cầu cuộc họp.</value>
+  </data>
+  <data name="AlwaysAddTheSendersAddressToCc" xml:space="preserve">
+    <value>Luôn tự động thêm địa chỉ của người gửi vào Cc.</value>
+  </data>
+  <data name="AttachmentAlertRecipients" xml:space="preserve">
+    <value>Người nhận cảnh báo tệp đính kèm</value>
+  </data>
+  <data name="AutoAddMessage" xml:space="preserve">
+    <value>Tự động thêm văn bản nội dung</value>
+  </data>
+  <data name="ForceAutoChangeRecipientsToBcc" xml:space="preserve">
+    <value>Buộc tự động đổi sang Bcc</value>
+  </data>
+  <data name="ForceAutoChangeRecipientsToBccNotes" xml:space="preserve">
+    <value>Các cài đặt sau được ưu tiên hơn các cài đặt trên.</value>
+  </data>
+  <data name="IsAddMessageToEnd" xml:space="preserve">
+    <value>Văn bản sau đây được tự động thêm vào cuối nội dung.</value>
+  </data>
+  <data name="IsAddMessageToStart" xml:space="preserve">
+    <value>Văn bản sau đây được tự động thêm vào đầu nội dung.</value>
+  </data>
+  <data name="IsCheckNameAndDomainsFromSubject" xml:space="preserve">
+    <value>Cảnh báo cũng được hiển thị khi không có tên người nhận trong chủ đề.</value>
+  </data>
+  <data name="IsCheckNameAndDomainsIncludeSubject" xml:space="preserve">
+    <value>Bao gồm chủ đề trong mục tiêu. *Chủ đề cũng như nội dung sẽ được bao gồm trong mục tiêu.</value>
+  </data>
+  <data name="IsForceAutoChangeRecipientsToBcc" xml:space="preserve">
+    <value>Buộc tất cả người nhận bên ngoài vào Bcc.</value>
+  </data>
+  <data name="IsIncludeInternalDomain" xml:space="preserve">
+    <value>Bao gồm các tên miền nội bộ. *Tất cả người nhận sẽ được chuyển đổi thành Bcc.</value>
+  </data>
+  <data name="SettingExampleAttachmentAlertRecipients" xml:space="preserve">
+    <value>Địa chỉ: info@noraneko.co.jp
+Hoặc
+Miền: @noraneko.co.jp
+
+Đăng ký địa chỉ e-mail hoặc miền và văn bản cảnh báo của nó.
+
+Sau khi đăng ký, cảnh báo sẽ được hiển thị khi gửi e-mail có tệp đính kèm đến đích đó.
+
+Nếu văn bản cảnh báo để trống, văn bản cảnh báo mặc định sẽ được hiển thị.</value>
+  </data>
+  <data name="SettingExampleAutoAddMessage" xml:space="preserve">
+    <value>Bạn có thể tự động thêm từ ngữ được chỉ định vào đầu hoặc cuối e-mail.</value>
+  </data>
+  <data name="ToRecipient" xml:space="preserve">
+    <value>Địa chỉ thư được đặt là To *Nếu không đặt, địa chỉ người gửi sẽ tự động được đặt là To.</value>
+  </data>
+  <data name="AddedTextAtTheBeginning" xml:space="preserve">
+    <value>Đã thêm văn bản vào đầu thư.</value>
+  </data>
+  <data name="AddedTextAtTheEnd" xml:space="preserve">
+    <value>Đã thêm văn bản vào cuối thư.</value>
+  </data>
+  <data name="CanNotFindTheLinkedNameInSubject" xml:space="preserve">
+    <value>Không thể tìm thấy tên liên kết trong chủ đề thư.</value>
+  </data>
+  <data name="AttachmentAlertRecipientsMessage" xml:space="preserve">
+    <value>Người nhận cảnh báo gửi tệp đính kèm.</value>
+  </data>
+  <data name="AutoAddToRecipientByForceAutoChangeRecipientsToBccAddressToAlert" xml:space="preserve">
+    <value>Địa chỉ Email được chỉ định đã được tự động thêm vào To. (vì To không còn tồn tại do tự động thay đổi thành Bcc.)</value>
+  </data>
+  <data name="ForceAutoChangeRecipientsToBccAlert" xml:space="preserve">
+    <value>Người nhận đã tự động được chuyển đổi thành Bcc.</value>
+  </data>
+  <data name="NotApplicableToMeetingRequests" xml:space="preserve">
+    <value>*Không áp dụng cho các yêu cầu họp.</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Mở</value>
+  </data>
+  <data name="ChangesInTheFileWillNotBeSaved" xml:space="preserve">
+    <value>*Các thay đổi trong tệp sẽ không được lưu.</value>
+  </data>
+  <data name="OpenTheAttachedFile" xml:space="preserve">
+    <value>Bạn có muốn mở tệp đính kèm không?</value>
+  </data>
+  <data name="IsEnableOpenAttachedFiles" xml:space="preserve">
+    <value>Bật chức năng mở tệp đính kèm trên màn hình xác nhận.</value>
+  </data>
+  <data name="IsMustOpenBeforeCheckTheAttachedFiles" xml:space="preserve">
+    <value>Trên màn hình xác nhận, bắt buộc phải mở tệp đính kèm mục tiêu.</value>
+  </data>
+  <data name="OpenTheAttachedFileOnTheConfirmationScreen" xml:space="preserve">
+    <value>Mở tệp đính kèm trên màn hình xác nhận.</value>
+  </data>
+  <data name="TargetAttachmentFileExtensionOfOpen" xml:space="preserve">
+    <value>Phần mở rộng tệp đính kèm mục tiêu:</value>
+  </data>
+  <data name="TaskRequest" xml:space="preserve">
+    <value>Giao nhiệm vụ</value>
+  </data>
+  <data name="ShowConfirmationAtSendTaskRequest" xml:space="preserve">
+    <value>Màn hình xác nhận cũng được hiển thị cho giao nhiệm vụ.</value>
+  </data>
+  <data name="AutoCheckAttachments" xml:space="preserve">
+    <value>Các tệp đính kèm sẽ được tự động kiểm tra.</value>
+  </data>
+  <data name="KeywordAndRecipients" xml:space="preserve">
+    <value>Từ khóa và người nhận liên quan</value>
+  </data>
+  <data name="SettingExampleKeywordAndRecipients" xml:space="preserve">
+    <value>Tên: Noraneko Inc
+Miền: @noraneko.co.jp
+
+Đăng ký từ khóa (tên công ty, v.v.) và người nhận (tên miền, v.v.).
+
+Nếu không có người nhận tương ứng với các từ khóa trong nội dung e-mail, cảnh báo sẽ được hiển thị.
+
+*Chủ đề cũng có thể được bao gồm trong kiểm tra.</value>
+  </data>
+  <data name="KeywordAndRecipientsAlert1" xml:space="preserve">
+    <value>Từ khóa "</value>
+  </data>
+  <data name="KeywordAndRecipientsAlert2" xml:space="preserve">
+    <value>" liên quan đến "</value>
+  </data>
+  <data name="KeywordAndRecipientsAlert3" xml:space="preserve">
+    <value>" không tồn tại.</value>
+  </data>
+  <data name="IsIgnoreMustOpenBeforeCheckTheAttachedFilesIfInternalDomain" xml:space="preserve">
+    <value>Không bắt buộc nếu tất cả người nhận là tên miền nội bộ.</value>
+  </data>
+  <data name="AlertKeywordOfSubjectWhenOpeningMails" xml:space="preserve">
+    <value>┗ Cảnh báo khi mở email (chủ đề)</value>
+  </data>
+  <data name="AlertOfReceivedMailSubject" xml:space="preserve">
+    <value>Dòng chủ đề chứa từ khóa cảnh báo.</value>
+  </data>
+  <data name="AttatchmentIsEncryptedZip" xml:space="preserve">
+    <value>Tệp này là tệp ZIP được mã hóa.</value>
+  </data>
+  <data name="DkimWarning1" xml:space="preserve">
+    <value>Xác minh DKIM thất bại. Người gửi có thể bị giả mạo.</value>
+  </data>
+  <data name="IsEnableAlertKeywordOfSubjectWhenOpeningMailsData" xml:space="preserve">
+    <value>Sử dụng chức năng cảnh báo khi dòng chủ đề chứa các từ khóa được chỉ định.</value>
+  </data>
+  <data name="IsEnableMailHeaderAnalysis" xml:space="preserve">
+    <value>Sử dụng các chức năng phân tích tiêu đề thư và cảnh báo.</value>
+  </data>
+  <data name="IsEnableSecurityForReceivedMail" xml:space="preserve">
+    <value>Sử dụng tính năng cảnh báo khi mở thư và tệp đính kèm.</value>
+  </data>
+  <data name="IsEnableWarningFeatureWhenOpeningAttachments" xml:space="preserve">
+    <value>Sử dụng tính năng cảnh báo khi mở tệp đính kèm.</value>
+  </data>
+  <data name="IsShowWarningWhenDkimFails" xml:space="preserve">
+    <value>Hiển thị cảnh báo khi xác minh bản ghi DKIM thất bại.</value>
+  </data>
+  <data name="IsShowWarningWhenSpfFails" xml:space="preserve">
+    <value>Hiển thị cảnh báo khi xác thực bản ghi SPF thất bại.</value>
+  </data>
+  <data name="IsWarnBeforeOpeningAttachments" xml:space="preserve">
+    <value>Cảnh báo trước khi mở tệp đính kèm.</value>
+  </data>
+  <data name="IsWarnBeforeOpeningAttachmentsThatContainMacros" xml:space="preserve">
+    <value>Cảnh báo khi mở tệp đính kèm có chứa macro.</value>
+  </data>
+  <data name="IsWarnBeforeOpeningEncryptedZip" xml:space="preserve">
+    <value>Cảnh báo khi mở tệp ZIP được mã hóa.</value>
+  </data>
+  <data name="IsWarnLinkFileInTheZip" xml:space="preserve">
+    <value>Cảnh báo nếu có tệp .lnk trong ZIP.</value>
+  </data>
+  <data name="IsWarnOfficeFileWithMacroInTheZip" xml:space="preserve">
+    <value>Cảnh báo nếu có tệp .docm, .xlsm hoặc .pptm trong ZIP.</value>
+  </data>
+  <data name="IsWarnOneFileInTheZip" xml:space="preserve">
+    <value>Cảnh báo nếu có tệp .one trong ZIP.</value>
+  </data>
+  <data name="OpenAttachmentWarning1" xml:space="preserve">
+    <value>Bạn có thực sự muốn mở tệp đính kèm không?</value>
+  </data>
+  <data name="OpenAttachmentWarning2" xml:space="preserve">
+    <value>Hãy rất cẩn thận với các tệp đáng ngờ.</value>
+  </data>
+  <data name="SecurityForReceivedMail" xml:space="preserve">
+    <value>Bảo mật thư đã nhận</value>
+  </data>
+  <data name="SettingExampleAlertKeywordOfSubjectWhenOpeningMails" xml:space="preserve">
+    <value>Đăng ký các từ khóa mục tiêu và văn bản cảnh báo.
+
+*Cài đặt sẽ được phản ánh sau khi khởi động lại Outlook.</value>
+  </data>
+  <data name="SettingExampleSecurityForReceivedMail" xml:space="preserve">
+    <value>Cài đặt sẽ được phản ánh sau khi khởi động lại Outlook.</value>
+  </data>
+  <data name="SpfDkimWaring2" xml:space="preserve">
+    <value>Vui lòng cẩn thận với nội dung và tệp đính kèm trong email này.</value>
+  </data>
+  <data name="SpfWarning1" xml:space="preserve">
+    <value>Xác minh SPF thất bại. Người gửi có thể bị giả mạo.</value>
+  </data>
+  <data name="SuspiciousAttachmentZip_link" xml:space="preserve">
+    <value>Tệp đính kèm đáng ngờ.
+Tệp .lnk có trong tệp ZIP,
+nguy cơ nhiễm vi-rút.</value>
+  </data>
+  <data name="SuspiciousAttachmentZip_macro" xml:space="preserve">
+    <value>Tệp đính kèm đáng ngờ.
+Tệp zip chứa tệp Office có chứa macro và
+nguy cơ nhiễm vi-rút.</value>
+  </data>
+  <data name="SuspiciousAttachmentZip_one" xml:space="preserve">
+    <value>Tệp đính kèm đáng ngờ.
+Tệp .one có trong tệp ZIP,
+nguy cơ nhiễm vi-rút.</value>
+  </data>
+  <data name="SuspiciousAttachment_macro" xml:space="preserve">
+    <value>Đây là các tệp đính kèm có chứa macro, nguy cơ nhiễm vi-rút.</value>
+  </data>
+  <data name="Warning" xml:space="preserve">
+    <value>Cảnh báo</value>
+  </data>
+  <data name="General2" xml:space="preserve">
+    <value>Chung 2</value>
+  </data>
+  <data name="CompletedExport" xml:space="preserve">
+    <value>Xuất tệp cấu hình đã hoàn tất.</value>
+  </data>
+  <data name="CompletedImport" xml:space="preserve">
+    <value>Nhập hoàn tất. Đóng cửa sổ cài đặt.</value>
+  </data>
+  <data name="ExportAllSettings" xml:space="preserve">
+    <value>Xuất tất cả cấu hình.</value>
+  </data>
+  <data name="ImportAllSettings" xml:space="preserve">
+    <value>Nhập cấu hình.</value>
+  </data>
+  <data name="ImportErrorOfAllSettings" xml:space="preserve">
+    <value>Vui lòng chọn tệp chính xác. Lỗi:</value>
+  </data>
+  <data name="IsNoInternetCantUseSecurityForReceivedMail" xml:space="preserve">
+    <value>Vì không có kết nối Internet, tính năng kiểm tra an toàn không khả dụng khi mở e-mail.</value>
+  </data>
+  <data name="CantUseSecurityForReceivedMail" xml:space="preserve">
+    <value>Do một số vấn đề, tính năng kiểm tra an toàn không khả dụng khi mở e-mail.</value>
+  </data>
+  <data name="SpoofingRiskWaring" xml:space="preserve">
+    <value>Email này có nguy cơ bị giả mạo (giả mạo người gửi).</value>
+  </data>
+  <data name="DisplayWarningIfTheSenderHasNotImplementedDmarc" xml:space="preserve">
+    <value>Hiển thị cảnh báo nếu người gửi chưa triển khai DMARC.</value>
+  </data>
+  <data name="WarnIfTheReceivedEmailIsAtRiskOfSpoofing" xml:space="preserve">
+    <value>Cảnh báo nếu email đã nhận có nguy cơ bị giả mạo (giả mạo người gửi).</value>
+  </data>
+  <data name="VerifyEmailHeader" xml:space="preserve">
+    <value>Xác minh Tiêu đề</value>
+  </data>
+  <data name="AutoDeleteRecipients" xml:space="preserve">
+    <value>Tự động xóa người nhận</value>
+  </data>
+  <data name="ErrorByAutoDeleteReRecipients" xml:space="preserve">
+    <value>Tất cả người nhận đã bị xóa do xóa tự động.
+Quay lại chỉnh sửa email.</value>
+  </data>
+  <data name="SettingExampleAutoDeleteRecipients" xml:space="preserve">
+    <value>Địa chỉ email: info@noraneko.co.jp
+hoặc
+Miền: @noraneko.co.jp
+
+Đăng ký miền hoặc địa chỉ email bạn muốn tự động xóa khỏi người nhận.
+
+Nếu xóa tự động dẫn đến không còn người nhận, thông báo lỗi sẽ xuất hiện và email sẽ không được gửi.</value>
+  </data>
+  <data name="RemovedRecipietnsMessage" xml:space="preserve">
+    <value>Người nhận đã bị xóa do chức năng xóa tự động.</value>
+  </data>
+</root>
