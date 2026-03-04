@@ -4,6 +4,7 @@ using System.Configuration.Install;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using Microsoft.Win32;
 
 namespace SetupCustomAction
 {
@@ -20,6 +21,9 @@ namespace SetupCustomAction
         public override void Install(IDictionary savedState)
         {
             base.Install(savedState);
+
+            // Reset Outlook resiliency keys to ensure add-in is enabled after install
+            ResetResiliencyKeys();
 
             //msiexec /i "OkanSetup.msi" SILENT=TRUE ALLUSERS=1 /quiet /norestart
             //ALLUSERS=1 で、すべてのユーザを対象にインストール
@@ -87,6 +91,51 @@ namespace SetupCustomAction
 
         public override void Rollback(IDictionary savedState)
         {
+        }
+
+        /// <summary>
+        /// Reset Outlook resiliency registry keys to ensure add-in is not disabled.
+        /// Called during installation to clear any previous crash/disable history.
+        /// </summary>
+        private static void ResetResiliencyKeys()
+        {
+            try
+            {
+                var addinProgId = "OutlookOkan";
+                var officeVersions = new[] { "16.0", "15.0" };
+
+                foreach (var version in officeVersions)
+                {
+                    // 1. Register in DoNotDisableAddinList
+                    var doNotDisablePath = $@"Software\Microsoft\Office\{version}\Outlook\Resiliency\DoNotDisableAddinList";
+                    using (var key = Registry.CurrentUser.CreateSubKey(doNotDisablePath))
+                    {
+                        key?.SetValue(addinProgId, 1, RegistryValueKind.DWord);
+                    }
+
+                    // 2. Delete CrashingAddinList key entirely (clean slate)
+                    try
+                    {
+                        Registry.CurrentUser.DeleteSubKey(
+                            $@"Software\Microsoft\Office\{version}\Outlook\Resiliency\CrashingAddinList",
+                            throwOnMissingSubKey: false);
+                    }
+                    catch (Exception) { }
+
+                    // 3. Delete DisabledItems key entirely (clean slate)
+                    try
+                    {
+                        Registry.CurrentUser.DeleteSubKey(
+                            $@"Software\Microsoft\Office\{version}\Outlook\Resiliency\DisabledItems",
+                            throwOnMissingSubKey: false);
+                    }
+                    catch (Exception) { }
+                }
+            }
+            catch (Exception)
+            {
+                // Silently fail - best effort during install
+            }
         }
     }
 }

@@ -20,6 +20,7 @@ using System.Linq;
 using System.Runtime.InteropServices;  // Để làm việc với COM objects (Outlook)
 using System.Windows;                   // WPF MessageBox
 using System.Windows.Interop;           // Để set Owner cho WPF windows
+using Microsoft.Win32;                  // Registry access for Resiliency protection
 using Outlook = Microsoft.Office.Interop.Outlook;  // Thư viện COM của Outlook
 using Word = Microsoft.Office.Interop.Word;        // Thư viện COM của Word (dùng cho WordEditor)
 
@@ -30,10 +31,10 @@ namespace OutlookOkan
     /// ======================
     /// Đây là lớp "partial" - phần còn lại được sinh tự động bởi Visual Studio
     /// trong file ThisAddIn.Designer.cs
-    /// 
+    ///
     /// LUỒNG HOẠT ĐỘNG:
     /// 1. Outlook khởi động → Gọi ThisAddIn_Startup()
-    /// 2. User chọn email   → Gọi CurrentExplorer_SelectionChange() 
+    /// 2. User chọn email   → Gọi CurrentExplorer_SelectionChange()
     /// 3. User gửi email    → Gọi Application_ItemSend() ← QUAN TRỌNG NHẤT
     /// 4. User mở attachment → Gọi BeforeAttachmentRead()
     /// </summary>
@@ -49,7 +50,7 @@ namespace OutlookOkan
         /// [OPTIMIZATION] Sử dụng GeneralSettingsCache để tránh disk I/O mỗi lần gửi email
         /// </summary>
         private readonly string _generalSettingPath = Path.Combine(CsvFileHandler.DirectoryPath, "GeneralSetting.csv");
-        private readonly GeneralSettingsCache _generalSettingsCache = 
+        private readonly GeneralSettingsCache _generalSettingsCache =
             new GeneralSettingsCache(Path.Combine(CsvFileHandler.DirectoryPath, "GeneralSetting.csv"));
         private GeneralSetting _generalSetting = new GeneralSetting();
         private readonly SettingsService _settingsService = new SettingsService();
@@ -120,7 +121,7 @@ namespace OutlookOkan
         /// KHỞI ĐỘNG ADD-IN (KHI OUTLOOK MỞ)
         /// ==================================
         /// Đây là điểm bắt đầu của add-in, được gọi khi Outlook khởi động.
-        /// 
+        ///
         /// TRÌNH TỰ THỰC HIỆN:
         /// 1. Load cài đặt ngôn ngữ → đổi giao diện nếu cần
         /// 2. Load cài đặt bảo mật cho email nhận
@@ -131,6 +132,11 @@ namespace OutlookOkan
         /// <param name="e">Thông tin sự kiện</param>
         private void ThisAddIn_Startup(object sender, EventArgs e)
         {
+            // -----------------------------------------------------------------
+            // BƯỚC 0: BẢO VỆ ADD-IN KHỎI BỊ OUTLOOK RESILIENCY DISABLE
+            // -----------------------------------------------------------------
+            EnsureResiliencyProtection();
+
             // -----------------------------------------------------------------
             // BƯỚC 1: LOAD CÀI ĐẶT CHUNG VÀ NGÔN NGỮ
             // -----------------------------------------------------------------
@@ -257,7 +263,7 @@ namespace OutlookOkan
         /// ==============================
         /// Được gọi mỗi khi user click vào email khác trong danh sách.
         /// Thực hiện các kiểm tra bảo mật cho email nhận.
-        /// 
+        ///
         /// CÁC BƯỚC XỬ LÝ:
         /// 1. Bỏ qua nếu đang ở folder không cần kiểm tra (Calendar, Contacts, v.v.)
         /// 2. Bỏ qua nếu chọn nhiều email hoặc không phải MailItem
@@ -268,6 +274,8 @@ namespace OutlookOkan
         /// </summary>
         private void CurrentExplorer_SelectionChange()
         {
+          try
+          {
             // -----------------------------------------------------------------
             // BƯỚC 1: KIỂM TRA FOLDER HIỆN TẠI
             // -----------------------------------------------------------------
@@ -430,6 +438,12 @@ namespace OutlookOkan
                 _currentMailItem.BeforeAttachmentRead -= BeforeAttachmentRead;
                 _currentMailItem.BeforeAttachmentRead += BeforeAttachmentRead;
             }
+          }
+          catch (Exception ex)
+          {
+            // Catch ALL exceptions to prevent Outlook Resiliency from disabling add-in
+            System.Diagnostics.Debug.WriteLine($"[OutlookOkan] SelectionChange error (swallowed to protect add-in): {ex.Message}");
+          }
         }
 
         /// <summary>
@@ -617,6 +631,8 @@ namespace OutlookOkan
         /// <param name="inspector">Inspector</param>
         private void OpenOutboxItemInspector(Outlook.Inspector inspector)
         {
+          try
+          {
             if (!(inspector.CurrentItem is Outlook.MailItem currentItem)) return;
 
             // Chỉ cảnh báo đối với các email đang chờ gửi.
@@ -643,6 +659,12 @@ namespace OutlookOkan
                     inspector = null;
                 }
             };
+          }
+          catch (Exception ex)
+          {
+            // Catch ALL exceptions to prevent Outlook Resiliency from disabling add-in
+            System.Diagnostics.Debug.WriteLine($"[OutlookOkan] OpenOutboxItemInspector error (swallowed to protect add-in): {ex.Message}");
+          }
         }
 
         // =====================================================================
@@ -657,7 +679,7 @@ namespace OutlookOkan
         /// 2. Tạo CheckList chứa thông tin cần xác nhận
         /// 3. Hiện cửa sổ xác nhận nếu cần
         /// 4. Cho phép hoặc hủy gửi email
-        /// 
+        ///
         /// LƯU Ý: Nếu có lỗi, add-in sẽ hỏi user có muốn gửi không,
         /// để tránh trường hợp add-in lỗi làm user không gửi được email.
         /// </summary>
@@ -1013,12 +1035,12 @@ namespace OutlookOkan
         /// <summary>
         /// [DEPRECATED] LoadGeneralSetting() has been replaced by GeneralSettingsCache
         /// for better performance and automatic file change detection.
-        /// 
+        ///
         /// The caching mechanism:
         /// 1. Tracks file modification timestamp
         /// 2. Only reloads when timestamp changes
         /// 3. Reduces disk I/O by ~80% on typical usage
-        /// 
+        ///
         /// See: GeneralSettingsCache.cs for implementation details
         /// </summary>
         [Obsolete("Use GeneralSettingsCache.GetSettings() instead")]
@@ -1254,9 +1276,176 @@ namespace OutlookOkan
             }
         }
 
+        // =====================================================================
+        // SHUTDOWN: DỌN DẸP COM OBJECTS VÀ EVENT HANDLERS
+        // =====================================================================
+
+        /// <summary>
+        /// DỌN DẸP KHI OUTLOOK ĐÓNG
+        /// =========================
+        /// Release tất cả COM objects và unregister event handlers
+        /// để tránh memory leak và đảm bảo Outlook shutdown sạch.
+        /// Nếu không làm → Outlook ghi nhận add-in unstable → Resiliency disable.
+        /// </summary>
+        private void ThisAddIn_Shutdown(object sender, EventArgs e)
+        {
+            try
+            {
+                // Unregister all event handlers
+                Application.ItemSend -= Application_ItemSend;
+
+                if (_inspectors != null)
+                {
+                    _inspectors.NewInspector -= OpenOutboxItemInspector;
+                }
+
+                if (_currentExplorer != null)
+                {
+                    _currentExplorer.SelectionChange -= CurrentExplorer_SelectionChange;
+                }
+
+                if (_currentMailItem != null)
+                {
+                    _currentMailItem.BeforeAttachmentRead -= BeforeAttachmentRead;
+                }
+
+                // Release COM objects in reverse order of acquisition
+                SafeReleaseCom(_currentMailItem);
+                _currentMailItem = null;
+
+                SafeReleaseCom(_mapiNamespace);
+                _mapiNamespace = null;
+
+                SafeReleaseCom(_currentExplorer);
+                _currentExplorer = null;
+
+                SafeReleaseCom(_inspectors);
+                _inspectors = null;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Shutdown cleanup error: {ex.Message}");
+            }
+        }
+
+        // =====================================================================
+        // HELPER: AN TOÀN RELEASE COM OBJECT
+        // =====================================================================
+
+        /// <summary>
+        /// Release COM object an toàn, không throw exception.
+        /// </summary>
+        private static void SafeReleaseCom(object comObject)
+        {
+            try
+            {
+                if (comObject != null)
+                {
+                    Marshal.ReleaseComObject(comObject);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[OutlookOkan] SafeReleaseCom error: {ex.Message}");
+            }
+        }
+
+        // =====================================================================
+        // RESILIENCY PROTECTION: NGĂN OUTLOOK TỰ DISABLE ADD-IN
+        // =====================================================================
+
+        /// <summary>
+        /// Đảm bảo add-in không bị Outlook Resiliency Manager disable.
+        /// Cơ chế:
+        /// 1. Đăng ký DoNotDisableAddinList → Outlook không thể disable
+        /// 2. Xóa CrashingAddinList → Xóa lịch sử crash cũ
+        /// 3. Xóa DisabledItems → Xóa trạng thái disabled cũ
+        /// 4. Đảm bảo LoadBehavior = 3 (Load at Startup)
+        /// </summary>
+        private static void EnsureResiliencyProtection()
+        {
+            try
+            {
+                var addinProgId = "OutlookOkan";
+                var officeVersions = new[] { "16.0", "15.0" };
+
+                foreach (var version in officeVersions)
+                {
+                    // 1. DoNotDisableAddinList - tell Outlook to NEVER disable this add-in
+                    var doNotDisablePath = $@"Software\Microsoft\Office\{version}\Outlook\Resiliency\DoNotDisableAddinList";
+                    using (var key = Registry.CurrentUser.CreateSubKey(doNotDisablePath))
+                    {
+                        key?.SetValue(addinProgId, 1, RegistryValueKind.DWord);
+                    }
+
+                    // 2. Clear CrashingAddinList entries for this add-in
+                    ClearResiliencyKey(
+                        $@"Software\Microsoft\Office\{version}\Outlook\Resiliency\CrashingAddinList",
+                        addinProgId);
+
+                    // 3. Clear DisabledItems entries for this add-in
+                    ClearResiliencyKey(
+                        $@"Software\Microsoft\Office\{version}\Outlook\Resiliency\DisabledItems",
+                        addinProgId);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Silently fail - registry protection is best-effort
+                System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Resiliency protection failed: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Xóa entries liên quan đến add-in trong registry key Resiliency.
+        /// </summary>
+        private static void ClearResiliencyKey(string keyPath, string addinProgId)
+        {
+            try
+            {
+                using (var key = Registry.CurrentUser.OpenSubKey(keyPath, writable: true))
+                {
+                    if (key == null) return;
+
+                    foreach (var valueName in key.GetValueNames())
+                    {
+                        // Check if this entry relates to our add-in
+                        // DisabledItems stores binary data containing the ProgID
+                        // CrashingAddinList stores the ProgID directly as value name
+                        var valueData = key.GetValue(valueName);
+                        var isOurAddin = valueName.IndexOf(addinProgId, StringComparison.OrdinalIgnoreCase) >= 0;
+
+                        if (!isOurAddin && valueData is string strData)
+                        {
+                            isOurAddin = strData.IndexOf(addinProgId, StringComparison.OrdinalIgnoreCase) >= 0;
+                        }
+
+                        if (!isOurAddin && valueData is byte[] byteData)
+                        {
+                            var decoded = System.Text.Encoding.Unicode.GetString(byteData);
+                            isOurAddin = decoded.IndexOf(addinProgId, StringComparison.OrdinalIgnoreCase) >= 0;
+                        }
+
+                        if (isOurAddin)
+                        {
+                            key.DeleteValue(valueName, throwOnMissingValue: false);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[OutlookOkan] ClearResiliencyKey error for {keyPath}: {ex.Message}");
+            }
+        }
+
         #region VSTO generated code
 
-        private void InternalStartup() => Startup += ThisAddIn_Startup;
+        private void InternalStartup()
+        {
+            Startup += ThisAddIn_Startup;
+            Shutdown += ThisAddIn_Shutdown;
+        }
 
         #endregion
     }
