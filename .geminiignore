@@ -1,0 +1,162 @@
+# ============================================
+# .geminiignore — Reduce Antigravity Context
+# ============================================
+# This file prevents the AI agent from indexing
+# and including these files/folders in its context,
+# saving thousands of tokens per conversation.
+# ============================================
+
+# === Package managers & dependencies ===
+node_modules/
+bower_components/
+vendor/
+.pnpm-store/
+packages/*/node_modules/
+
+# === Build outputs ===
+dist/
+build/
+out/
+.next/
+.nuxt/
+.output/
+.vercel/
+target/
+bin/
+obj/
+
+# === Version control ===
+.git/
+.svn/
+.hg/
+
+# === IDE & editor files ===
+.vs/
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# === OS files ===
+Thumbs.db
+Desktop.ini
+.DS_Store
+._*
+
+# === Logs & temporary files ===
+*.log
+*.logs
+logs/
+tmp/
+temp/
+*.tmp
+*.bak
+*.old
+
+# === Data & database files ===
+*.sqlite
+*.sqlite3
+*.db
+*.mdb
+*.sql
+*.csv
+*.tsv
+*.parquet
+
+# === Binary & media files ===
+*.exe
+*.dll
+*.so
+*.dylib
+*.bin
+*.dat
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+*.iso
+*.img
+*.pdf
+*.doc
+*.docx
+*.xls
+*.xlsx
+*.ppt
+*.pptx
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.ico
+*.svg
+*.mp3
+*.mp4
+*.avi
+*.mov
+*.wav
+*.webm
+*.webp
+
+# === Package lock files (large, not useful for AI) ===
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+Pipfile.lock
+poetry.lock
+composer.lock
+Gemfile.lock
+Cargo.lock
+
+# === Python ===
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+*.egg
+.tox/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+.coverage.*
+
+# === .NET / C# ===
+bin/
+obj/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+packages/
+
+# === Environment & secrets ===
+.env
+.env.*
+*.pem
+*.key
+*.cert
+*.crt
+
+# === Test & coverage outputs ===
+coverage/
+.nyc_output/
+test-results/
+junit-reports/
+
+# === Documentation that bloats context ===
+# Uncomment if your docs folder is very large:
+# docs/
+# documentation/
+# wiki/
+
+# === Large generated files ===
+*.min.js
+*.min.css
+*.bundle.js
+*.chunk.js
+*.map
