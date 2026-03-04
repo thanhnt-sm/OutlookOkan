@@ -1,12 +1,12 @@
 # ⚠️ RETRY INSTRUCTION — Overflow Auto-Recovery
-_Auto-generated: 2026-03-04T10:51:58.354Z_
-_Recovery attempt: #3 (source: pb-size-estimate)_
+_Auto-generated: 2026-03-04T11:20:17.216Z_
+_Recovery attempt: #1 (source: pb-size-estimate)_
 
 ## Error
 Previous request failed: **prompt is too long**
-- Actual tokens: **202,450**
+- Actual tokens: **210,818**
 - Maximum allowed: **200,000**
-- Over by: **2,450 tokens**
+- Over by: **10,818 tokens**
 
 ## What Happened
 - Context Guardian detected the overflow error automatically
