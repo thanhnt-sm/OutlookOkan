@@ -362,3 +362,9 @@ FodyWeavers.xsd
 OutlookOkanTest/.DS_Store
 OutlookOkan/.DS_Store
 .env/.key
+_handoff.md
+.context/memory_bank/progress.md
+.context/memory_bank/activeContext.md
+.context/continuation/SESSION_SUMMARY.md
+.context/continuation/HANDOFF.md
+.context/continuation/COMPACT_NOW.md
