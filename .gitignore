@@ -382,3 +382,9 @@ _handoff.md
 .context/continuation/SESSION_SUMMARY.md
 .context/memory_bank/activeContext.md
 .context/memory_bank/progress.md
+.context/continuation/COMPACT_NOW.md
+.context/continuation/HANDOFF.md
+.context/continuation/SESSION_SUMMARY.md
+.context/memory_bank/activeContext.md
+.context/memory_bank/progress.md
+_handoff.md
