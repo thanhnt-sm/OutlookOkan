@@ -1,48 +1,28 @@
-using System;
-using System.Net;
 using System.Reflection;
 
 namespace OutlookOkan.Models
 {
     /// <summary>
-    /// 新しいバージョンの有無を確認する。
+    /// Kiểm tra phiên bản mới.
+    /// [SECURITY] Đã vô hiệu hóa kết nối internet - add-in hoạt động hoàn toàn offline.
     /// </summary>
     internal sealed class CheckNewVersion
     {
         /// <summary>
-        /// 新バージョンのダウンロード可否を返す。
+        /// Luôn trả về false - tính năng kiểm tra phiên bản mới đã bị vô hiệu hóa
+        /// để đảm bảo add-in không thực hiện bất kỳ kết nối internet nào.
         /// </summary>
-        /// <returns>新バージョンのダウンロード可否</returns>
+        /// <returns>Luôn trả về false</returns>
         internal bool IsCanDownloadNewVersion()
         {
-            using (var client = new WebClient())
-            {
-                try
-                {
-                    ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-
-                    client.Encoding = System.Text.Encoding.UTF8;
-                    var versionFile = client.DownloadString("https://raw.githubusercontent.com/thanhnt-sm/OutlookOkan/master/version");
-                    if (string.IsNullOrEmpty(versionFile)) return false;
-
-                    var fetchedVersion = int.Parse(versionFile.Replace(".", ""));
-                    return fetchedVersion > GetCurrentVersion();
-
-                }
-                catch (Exception ex)
-                {
-                    // Log version check error (non-critical)
-                    System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Failed to check for new version: {ex.Message}");
-                    return false;
-                }
-            }
+            return false;
         }
 
         /// <summary>
-        /// 現在使用しているアドインのバージョンを取得する。
+        /// Lấy phiên bản hiện tại của add-in.
         /// </summary>
-        /// <returns>現在使用しているアドインのバージョン</returns>
-        private int GetCurrentVersion()
+        /// <returns>Phiên bản hiện tại</returns>
+        internal int GetCurrentVersion()
         {
             var assemblyName = Assembly.GetExecutingAssembly().GetName();
             return int.Parse(assemblyName.Version.Major.ToString() + assemblyName.Version.Minor.ToString() + assemblyName.Version.Build.ToString() + assemblyName.Version.Revision.ToString());
