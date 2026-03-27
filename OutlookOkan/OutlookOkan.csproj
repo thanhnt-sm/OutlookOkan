@@ -386,7 +386,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <ManifestKeyFile>OutlookOkan_CI.pfx</ManifestKeyFile>
-    <ManifestCertificateThumbprint>85E31EDD4A62225E14A63506C904E51E0FCDA805</ManifestCertificateThumbprint>
+    <ManifestCertificateThumbprint>0C25CA03400B088D2EB5E187DEEF627E255BD069</ManifestCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>false</SignAssembly>
