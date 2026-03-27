@@ -1,4 +1,4 @@
-﻿using OutlookOkan.Models;
+using OutlookOkan.Models;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
@@ -23,7 +23,7 @@ namespace OutlookOkan.ViewModels
                 var result = MessageBox.Show(Properties.Resources.CanGetNewVersion, Properties.Resources.AppName, MessageBoxButton.YesNo);
                 if (result == MessageBoxResult.Yes)
                 {
-                    _ = Process.Start("https://github.com/t-miyake/OutlookOkan/releases");
+                    _ = Process.Start("https://github.com/thanhnt-sm/OutlookOkan/releases");
                 }
             }
             else

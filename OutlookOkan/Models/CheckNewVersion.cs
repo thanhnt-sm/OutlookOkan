@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net;
 using System.Reflection;
 
@@ -22,7 +22,7 @@ namespace OutlookOkan.Models
                     ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 
                     client.Encoding = System.Text.Encoding.UTF8;
-                    var versionFile = client.DownloadString("https://raw.githubusercontent.com/t-miyake/OutlookOkan/master/version");
+                    var versionFile = client.DownloadString("https://raw.githubusercontent.com/thanhnt-sm/OutlookOkan/master/version");
                     if (string.IsNullOrEmpty(versionFile)) return false;
 
                     var fetchedVersion = int.Parse(versionFile.Replace(".", ""));

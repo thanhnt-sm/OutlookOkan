@@ -1,7 +1,7 @@
 Outlook Okan (Add-in ngăn chặn gửi mail nhầm)
 ========
 
-Tiếng Nhật xem tại [đây](https://github.com/t-miyake/OutlookOkan/)。
+Tiếng Nhật xem tại [đây](https://github.com/thanhnt-sm/OutlookOkan/)。
 
 Outlook Okan là một add-in dành cho Microsoft Office Outlook.  
 
@@ -11,26 +11,26 @@ Add-in này sẽ hiển thị một cửa sổ xác nhận trước khi gửi em
 Đối với các email nhạy cảm, bạn có thể yên tâm rằng add-in này là mã nguồn mở hoàn toàn.  
 Ngoài ra còn có các tính năng tùy chọn hữu ích như cảnh báo từ khóa và tự động thêm Cc/Bcc.  
 
-Bạn có thể tải xuống add-in này tại [đây](https://github.com/t-miyake/OutlookOkan/releases).  
+Bạn có thể tải xuống add-in này tại [đây](https://github.com/thanhnt-sm/OutlookOkan/releases).  
 
 Add-in này là mã nguồn mở và sử dụng miễn phí, nhưng không được hỗ trợ và không được đảm bảo.  
-([Giấy phép](https://github.com/t-miyake/OutlookOkan/blob/master/LICENSE))  
+([Giấy phép](https://github.com/thanhnt-sm/OutlookOkan/blob/master/LICENSE))  
 Nếu bạn cần tùy chỉnh hoặc hỗ trợ, vui lòng liên hệ trực tiếp với chúng tôi.  
 
 Cửa sổ xác nhận trước khi gửi.  
-![Screenshot 1](https://github.com/t-miyake/OutlookOkan/blob/master/Screenshots/en/Screenshot_v2.5.0_01_en.png)  
+![Screenshot 1](https://github.com/thanhnt-sm/OutlookOkan/blob/master/Screenshots/en/Screenshot_v2.5.0_01_en.png)  
 
 Cửa sổ cài đặt (cài đặt chung)  
-![Screenshot 2](https://github.com/t-miyake/OutlookOkan/blob/master/Screenshots/en/Screenshot_v2.7.0_04_en.png)  
+![Screenshot 2](https://github.com/thanhnt-sm/OutlookOkan/blob/master/Screenshots/en/Screenshot_v2.7.0_04_en.png)  
 
 Cửa sổ cài đặt (gửi chậm)  
-![Screenshot 3](https://github.com/t-miyake/OutlookOkan/blob/master/Screenshots/en/Screenshot_v2.7.0_05_en.png)  
+![Screenshot 3](https://github.com/thanhnt-sm/OutlookOkan/blob/master/Screenshots/en/Screenshot_v2.7.0_05_en.png)  
 
 Cửa sổ cảnh báo  
-![Screenshot 4](https://github.com/t-miyake/OutlookOkan/blob/master/Screenshots/en/Screenshot_v2.5.0_03_en.png)  
+![Screenshot 4](https://github.com/thanhnt-sm/OutlookOkan/blob/master/Screenshots/en/Screenshot_v2.5.0_03_en.png)  
 
 Cửa sổ giới thiệu  
-![Screenshot 5](https://github.com/t-miyake/OutlookOkan/blob/master/Screenshots/en/Screenshot_v2.6.1_02_en.png)  
+![Screenshot 5](https://github.com/thanhnt-sm/OutlookOkan/blob/master/Screenshots/en/Screenshot_v2.6.1_02_en.png)  
 
 ## Yêu cầu hệ thống
 
@@ -111,12 +111,12 @@ Cửa sổ giới thiệu
 
 ## Hướng dẫn sử dụng
 
-[Wiki(Manual)](https://github.com/t-miyake/OutlookOkan/wiki/Manual)  
+[Wiki(Manual)](https://github.com/thanhnt-sm/OutlookOkan/wiki/Manual)  
 
 ## Các lỗi đã biết
 
-[Wiki(Known Issues)](https://github.com/t-miyake/OutlookOkan/wiki/Known-Issues)  
+[Wiki(Known Issues)](https://github.com/thanhnt-sm/OutlookOkan/wiki/Known-Issues)  
 
 ## Lộ trình phát triển
 
-[Wiki(Roadmap)](https://github.com/t-miyake/OutlookOkan/wiki/Roadmap)  
+[Wiki(Roadmap)](https://github.com/thanhnt-sm/OutlookOkan/wiki/Roadmap)  

@@ -1,4 +1,4 @@
-﻿using OutlookOkan.Handlers;
+using OutlookOkan.Handlers;
 using OutlookOkan.Helpers;
 using OutlookOkan.Views;
 using System;
@@ -24,7 +24,7 @@ namespace OutlookOkan
 
         public void ShowHelp(Office.IRibbonControl control)
         {
-            _ = Process.Start("https://github.com/t-miyake/OutlookOkan/wiki/Manual");
+            _ = Process.Start("https://github.com/thanhnt-sm/OutlookOkan/wiki/Manual");
         }
 
         public void ShowSettings(Office.IRibbonControl control)

@@ -1,7 +1,7 @@
 Outlook Okan (Add-in to prevent mis-sent emails.)
 ========
 
-日本語は[こちら](https://github.com/t-miyake/OutlookOkan/)。
+日本語は[こちら](https://github.com/thanhnt-sm/OutlookOkan/)。
 
 Outlook Okan is an add-in for Microsoft Office Outlook.  
 
@@ -11,26 +11,26 @@ That's to prevent mis-sent emails.
 For sensitive emails, you can rest assured that this add-in is completely open source.  
 There are also useful optional features such as keyword warnings and automatic Cc/Bcc addition.  
 
-You can download this add-in [here](https://github.com/t-miyake/OutlookOkan/releases).  
+You can download this add-in [here](https://github.com/thanhnt-sm/OutlookOkan/releases).  
 
 This add-in is open source and free to use, but it is unsupported and unguaranteed.  
-([License](https://github.com/t-miyake/OutlookOkan/blob/master/LICENSE))  
+([License](https://github.com/thanhnt-sm/OutlookOkan/blob/master/LICENSE))  
 If you need customization or support, please contact us on an individual basis.  
 
 Confirmation window before sending.  
-![Screenshot 1](https://github.com/t-miyake/OutlookOkan/blob/master/Screenshots/en/Screenshot_v2.5.0_01_en.png)  
+![Screenshot 1](https://github.com/thanhnt-sm/OutlookOkan/blob/master/Screenshots/en/Screenshot_v2.5.0_01_en.png)  
 
 Settings window (general settings)  
-![Screenshot 2](https://github.com/t-miyake/OutlookOkan/blob/master/Screenshots/en/Screenshot_v2.7.0_04_en.png)  
+![Screenshot 2](https://github.com/thanhnt-sm/OutlookOkan/blob/master/Screenshots/en/Screenshot_v2.7.0_04_en.png)  
 
 Settings window (deferred delivery)  
-![Screenshot 3](https://github.com/t-miyake/OutlookOkan/blob/master/Screenshots/en/Screenshot_v2.7.0_05_en.png)  
+![Screenshot 3](https://github.com/thanhnt-sm/OutlookOkan/blob/master/Screenshots/en/Screenshot_v2.7.0_05_en.png)  
 
 Alert window  
-![Screenshot 4](https://github.com/t-miyake/OutlookOkan/blob/master/Screenshots/en/Screenshot_v2.5.0_03_en.png)  
+![Screenshot 4](https://github.com/thanhnt-sm/OutlookOkan/blob/master/Screenshots/en/Screenshot_v2.5.0_03_en.png)  
 
 About window  
-![Screenshot 5](https://github.com/t-miyake/OutlookOkan/blob/master/Screenshots/en/Screenshot_v2.6.1_02_en.png)  
+![Screenshot 5](https://github.com/thanhnt-sm/OutlookOkan/blob/master/Screenshots/en/Screenshot_v2.6.1_02_en.png)  
 
 ## System requirements
 
@@ -111,12 +111,12 @@ About window
 
 ## Manual
 
-[Wiki(Manual)](https://github.com/t-miyake/OutlookOkan/wiki/Manual)  
+[Wiki(Manual)](https://github.com/thanhnt-sm/OutlookOkan/wiki/Manual)  
 
 ## Known Issues
 
-[Wiki(Known Issues)](https://github.com/t-miyake/OutlookOkan/wiki/Known-Issues)  
+[Wiki(Known Issues)](https://github.com/thanhnt-sm/OutlookOkan/wiki/Known-Issues)  
 
 ## Roadmap
 
-[Wiki(Roadmap)](https://github.com/t-miyake/OutlookOkan/wiki/Roadmap)  
+[Wiki(Roadmap)](https://github.com/thanhnt-sm/OutlookOkan/wiki/Roadmap)  

@@ -3,7 +3,7 @@
 // ============================================================================
 // File: ThisAddIn.cs
 // Mô tả: Đây là file chính của VSTO Add-in, xử lý tất cả sự kiện từ Outlook
-// Tác giả: t-miyake | Dịch comment: AI Assistant
+// Tác giả: thanhnt-sm (fork từ t-miyake) | Dịch comment: AI Assistant
 // ============================================================================
 
 // --- CÁC THƯ VIỆN SỬ DỤNG ---
