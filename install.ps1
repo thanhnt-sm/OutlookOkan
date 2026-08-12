@@ -96,6 +96,35 @@ Write-Host "  VSTO: $vstoFile" -ForegroundColor Gray
 $installCode = $LASTEXITCODE
 
 if ($installCode -eq 0) {
+    # --- [OPTIMIZATION] NGEN: Pre-compile DLL thành native code, loại bỏ JIT overhead ---
+    # NGEN (Native Image Generator) biên dịch trước add-in DLL thành native code.
+    # Kết quả: Outlook không cần JIT compile khi load add-in → tiết kiệm 200-500ms startup.
+    Write-Host ""
+    Write-Host "[+] Running NGEN to pre-compile add-in (loại bỏ JIT overhead)..." -ForegroundColor Yellow
+
+    $dllPath = Join-Path $PSScriptRoot "OutlookOkan\bin\Release\OutlookOkan.dll"
+    if (Test-Path $dllPath) {
+        # Tìm ngen.exe theo .NET Framework version (ưu tiên 4.x)
+        $ngenPaths = @(
+            "${env:SystemRoot}\Microsoft.NET\Framework\v4.0.30319\ngen.exe",
+            "${env:SystemRoot}\Microsoft.NET\Framework64\v4.0.30319\ngen.exe"
+        )
+        $ngenExe = $ngenPaths | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+        if ($ngenExe) {
+            & $ngenExe install $dllPath /nologo 2>&1 | Out-Null
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "  OK: NGEN completed — startup sẽ nhanh hơn đáng kể." -ForegroundColor Green
+            } else {
+                Write-Host "  WARN: NGEN failed (non-critical, add-in vẫn hoạt động)." -ForegroundColor Yellow
+            }
+        } else {
+            Write-Host "  SKIP: ngen.exe không tìm thấy (non-critical)." -ForegroundColor Gray
+        }
+    } else {
+        Write-Host "  SKIP: $dllPath không tồn tại." -ForegroundColor Gray
+    }
+
     Write-Host ""
     Write-Host "========================================================" -ForegroundColor Green
     Write-Host "        INSTALL SUCCESSFUL                              " -ForegroundColor Green

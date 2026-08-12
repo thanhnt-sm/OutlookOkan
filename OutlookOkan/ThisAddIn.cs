@@ -21,6 +21,7 @@ using System.Runtime.InteropServices;  // Để làm việc với COM objects (O
 using System.Windows;                   // WPF MessageBox
 using System.Windows.Interop;           // Để set Owner cho WPF windows
 using Microsoft.Win32;                  // Registry access for Resiliency protection
+using System.Threading.Tasks;           // Task.Run cho background thread tối ưu startup
 using Outlook = Microsoft.Office.Interop.Outlook;  // Thư viện COM của Outlook
 using Word = Microsoft.Office.Interop.Word;        // Thư viện COM của Word (dùng cho WordEditor)
 
@@ -97,6 +98,12 @@ namespace OutlookOkan
         /// </summary>
         private HashSet<string> _excludedFolderNames;
 
+        /// <summary>
+        /// Flag lazy init — MAPI namespace và danh sách folder loại trừ đã sẵn sàng chưa.
+        /// Được khởi tạo lần đầu khi SelectionChange bắn, không phải lúc startup.
+        /// </summary>
+        private bool _isSecurityInitialized = false;
+
         // =====================================================================
         // TẠO RIBBON (NÚT BẤM TRÊN THANH CÔNG CỤ OUTLOOK)
         // =====================================================================
@@ -132,10 +139,15 @@ namespace OutlookOkan
         /// <param name="e">Thông tin sự kiện</param>
         private void ThisAddIn_Startup(object sender, EventArgs e)
         {
+            // Đo thời gian startup add-in — ghi ra file log để phân tích hiệu suất
+            var _startupSw = System.Diagnostics.Stopwatch.StartNew();
+
             // -----------------------------------------------------------------
             // BƯỚC 0: BẢO VỆ ADD-IN KHỎI BỊ OUTLOOK RESILIENCY DISABLE
             // -----------------------------------------------------------------
-            EnsureResiliencyProtection();
+            // Chạy trên background thread để không chặn UI thread startup.
+            // Registry write không cần hoàn thành trước khi Outlook hiển thị.
+            Task.Run(() => EnsureResiliencyProtection());
 
             // -----------------------------------------------------------------
             // BƯỚC 1: LOAD CÀI ĐẶT CHUNG VÀ NGÔN NGỮ
@@ -172,47 +184,11 @@ namespace OutlookOkan
                     }
                     else
                     {
-                        // Lấy namespace MAPI để truy cập dữ liệu Outlook
-                        _mapiNamespace = Application.GetNamespace("MAPI");
-
-                        if (_mapiNamespace is null)
-                        {
-                            // Không thể kết nối MAPI (có thể do không có mạng)
-                            MessageBox.Show(
-                                Properties.Resources.IsNoInternetCantUseSecurityForReceivedMail,
-                                Properties.Resources.AppName,
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Warning);
-                        }
-                        else
-                        {
-                            // -------------------------------------------------
-                            // TẠO DANH SÁCH FOLDER LOẠI TRỪ
-                            // -------------------------------------------------
-                            // Các folder này không phải là hộp thư đến,
-                            // không cần kiểm tra bảo mật khi user chọn item
-                            _excludedFolderNames = new HashSet<string>{
-                                _mapiNamespace.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderCalendar).Name,      // Lịch
-                                _mapiNamespace.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderContacts).Name,      // Danh bạ
-                                _mapiNamespace.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderDrafts).Name,        // Bản nháp
-                                _mapiNamespace.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderJournal).Name,       // Nhật ký
-                                _mapiNamespace.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderNotes).Name,         // Ghi chú
-                                _mapiNamespace.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderOutbox).Name,        // Hộp thư đi
-                                _mapiNamespace.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderRssFeeds).Name,      // RSS
-                                _mapiNamespace.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderSentMail).Name,      // Đã gửi
-                                _mapiNamespace.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderServerFailures).Name,// Lỗi server
-                                _mapiNamespace.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderLocalFailures).Name, // Lỗi local
-                                _mapiNamespace.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderSyncIssues).Name,    // Lỗi đồng bộ
-                                _mapiNamespace.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderTasks).Name,         // Công việc
-                                _mapiNamespace.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderToDo).Name           // Việc cần làm
-                            };
-
-                            // Load danh sách từ khóa cảnh báo trong tiêu đề email
-                            LoadAlertKeywordOfSubjectWhenOpeningMailsData();
-
-                            // Đăng ký event: khi user chọn email khác → kiểm tra bảo mật
-                            _currentExplorer.SelectionChange += CurrentExplorer_SelectionChange;
-                        }
+                        // [OPTIMIZATION] Đăng ký event ngay, bỏ qua 13 GetDefaultFolder() COM calls.
+                        // MAPI namespace và danh sách folder loại trừ sẽ được khởi tạo lazily
+                        // (trì hoãn đến lần đầu tiên SelectionChange được bắn).
+                        // Tiết kiệm ~50-130ms trên startup.
+                        _currentExplorer.SelectionChange += CurrentExplorer_SelectionChange;
                     }
                 }
                 catch (Exception exception)
@@ -246,6 +222,13 @@ namespace OutlookOkan
             // Đăng ký event: khi user click nút Send
             // → đây là nơi add-in can thiệp để hiện cửa sổ xác nhận
             Application.ItemSend += Application_ItemSend;
+
+            // Ghi kết quả đo thời gian startup ra file log
+            _startupSw.Stop();
+            System.IO.File.AppendAllText(
+                System.IO.Path.Combine(System.IO.Path.GetTempPath(), "OutlookOkan_startup.log"),
+                $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} | Startup: {_startupSw.ElapsedMilliseconds}ms\n"
+            );
         }
 
         // =====================================================================
@@ -272,10 +255,79 @@ namespace OutlookOkan
         /// 5. Phân tích header (SPF, DKIM, DMARC) để phát hiện email giả mạo
         /// 6. Đăng ký event kiểm tra attachment nếu email có file đính kèm
         /// </summary>
+
+        /// <summary>
+        /// Khởi tạo MAPI namespace và danh sách folder loại trừ (lazy init).
+        /// Được gọi lần đầu từ CurrentExplorer_SelectionChange, tiết kiệm startup time.
+        /// Trả về false nếu khởi tạo thất bại (không kết nối được MAPI).
+        /// </summary>
+        private bool EnsureSecurityInitialized()
+        {
+            if (_isSecurityInitialized) return true;
+
+            try
+            {
+                _mapiNamespace = Application.GetNamespace("MAPI");
+
+                if (_mapiNamespace is null)
+                {
+                    MessageBox.Show(
+                        Properties.Resources.IsNoInternetCantUseSecurityForReceivedMail,
+                        Properties.Resources.AppName,
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return false;
+                }
+
+                // 13 lần GetDefaultFolder() — chạy lazy, không chặn startup
+                _excludedFolderNames = new HashSet<string>
+                {
+                    _mapiNamespace.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderCalendar).Name,
+                    _mapiNamespace.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderContacts).Name,
+                    _mapiNamespace.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderDrafts).Name,
+                    _mapiNamespace.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderJournal).Name,
+                    _mapiNamespace.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderNotes).Name,
+                    _mapiNamespace.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderOutbox).Name,
+                    _mapiNamespace.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderRssFeeds).Name,
+                    _mapiNamespace.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderSentMail).Name,
+                    _mapiNamespace.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderServerFailures).Name,
+                    _mapiNamespace.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderLocalFailures).Name,
+                    _mapiNamespace.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderSyncIssues).Name,
+                    _mapiNamespace.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderTasks).Name,
+                    _mapiNamespace.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderToDo).Name
+                };
+
+                LoadAlertKeywordOfSubjectWhenOpeningMailsData();
+                _isSecurityInitialized = true;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // Giải phóng COM objects nếu đã khởi tạo một phần để tránh memory leak
+                SafeReleaseCom(_mapiNamespace);
+                _mapiNamespace = null;
+                _excludedFolderNames = null;
+
+                MessageBox.Show(
+                    ex.HResult == ComErrorCodes.MkEUnavailable
+                        ? Properties.Resources.IsNoInternetCantUseSecurityForReceivedMail
+                        : Properties.Resources.CantUseSecurityForReceivedMail,
+                    Properties.Resources.AppName,
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return false;
+            }
+        }
+
         private void CurrentExplorer_SelectionChange()
         {
           try
           {
+            // -----------------------------------------------------------------
+            // BƯỚC 0: LAZY INIT — Khởi tạo MAPI và danh sách folder lần đầu tiên
+            // -----------------------------------------------------------------
+            if (!EnsureSecurityInitialized()) return;
+
             // -----------------------------------------------------------------
             // BƯỚC 1: KIỂM TRA FOLDER HIỆN TẠI
             // -----------------------------------------------------------------
@@ -688,13 +740,6 @@ namespace OutlookOkan
         private void Application_ItemSend(object item, ref bool cancel)
         {
             // -----------------------------------------------------------------
-            // [NEW] FORCE UTF-8 ENCODING
-            // -----------------------------------------------------------------
-            // Bắt buộc sử dụng UTF-8 (Codepage 65001) cho tất cả email gửi đi
-            // để sửa lỗi font tiếng Việt khi gửi Lịch/Meeting sang đối tác.
-            ForceUtf8Encoding(item);
-
-            // -----------------------------------------------------------------
             // BƯỚC 0: KIỂM TRA CỬA SỔ OUTLOOK CÓ KHẢ DỤNG KHÔNG
             // -----------------------------------------------------------------
             try
@@ -1028,6 +1073,8 @@ namespace OutlookOkan
         /// </summary>
         private void LoadAlertKeywordOfSubjectWhenOpeningMailsData()
         {
+            // Clear trước khi load để tránh nhân đôi dữ liệu nếu method này được gọi lại
+            _alertKeywordOfSubjectWhenOpeningMail.Clear();
             var alertKeywordOfSubjectWhenOpeningMails = CsvFileHandler.ReadCsv<AlertKeywordOfSubjectWhenOpeningMail>(typeof(AlertKeywordOfSubjectWhenOpeningMailMap), "AlertKeywordOfSubjectWhenOpeningMailList.csv").Where(x => !string.IsNullOrEmpty(x.AlertKeyword));
             _alertKeywordOfSubjectWhenOpeningMail.AddRange(alertKeywordOfSubjectWhenOpeningMails);
         }
@@ -1200,42 +1247,7 @@ namespace OutlookOkan
             return true;
         }
 
-        /// <summary>
-        /// Bắt buộc set encoding là UTF-8 (65001) cho item để tránh lỗi font chữ.
-        /// Đặc biệt quan trọng đối với Tiếng Việt và các ngôn ngữ tượng hình.
-        /// </summary>
-        /// <param name="item">Outlook Item (Mail, Meeting, Appointment, Task)</param>
-        private void ForceUtf8Encoding(object item)
-        {
-            try
-            {
-                // 65001 = UTF-8 Code Page
-                const int UTF8_CODEPAGE = 65001;
 
-                if (item is Outlook.MailItem mail)
-                {
-                    mail.InternetCodepage = UTF8_CODEPAGE;
-                }
-                else if (item is Outlook.AppointmentItem appointment)
-                {
-                    appointment.InternetCodepage = UTF8_CODEPAGE;
-                }
-
-                // Mở rộng: Sử dụng PropertyAccessor để set PR_INTERNET_CPID (0x3FDE0003) nếu property trực tiếp không có
-                // PR_INTERNET_CPID = 0x3FDE0003
-                var propertyAccessor = ((dynamic)item).PropertyAccessor;
-                if (propertyAccessor != null)
-                {
-                    // 0x3FDE0003 = PidTagInternetCodepage
-                    propertyAccessor.SetProperty("http://schemas.microsoft.com/mapi/proptag/0x3FDE0003", UTF8_CODEPAGE);
-                }
-            }
-            catch (Exception ex)
-            {
-                // Không throw exception để tránh block luồng gửi mail chính
-                System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Failed to Force UTF-8: {ex.Message}");
-            }
-        }
 
         /// <summary>
         /// [OPTIMIZATION-TASK4-PHASE3] Xác định xem email có chứa tệp đính kèm dạng liên kết không

@@ -32,7 +32,8 @@ namespace OutlookOkan.Services
 
         public SettingsService()
         {
-            LoadSettings();
+            // Không tải CSV ngay khi khởi tạo — để trì hoãn đến lần gửi email đầu tiên.
+            // Application_ItemSend gọi LoadSettings() một cách tường minh khi cần.
         }
 
         private readonly Dictionary<string, System.DateTime> _fileTimestamps = new Dictionary<string, System.DateTime>();
@@ -104,21 +105,25 @@ namespace OutlookOkan.Services
         private void LoadIfChanged(string fileName, System.Action loadAction)
         {
             var fullPath = System.IO.Path.Combine(_basePath, fileName);
+
+            // [OPTIMIZATION] Dùng DateTime.MinValue làm sentinel cho "file không tồn tại".
+            // Lần đầu: File.Exists() = false → loadAction() khởi tạo list rỗng → cache MinValue.
+            // Lần sau: file vẫn chưa tồn tại → File.Exists() nhanh → skip loadAction().
+            // Hiệu quả: tránh 16+ loadAction() calls không cần thiết mỗi lần gửi email.
             if (!System.IO.File.Exists(fullPath))
             {
-                // File doesn't exist, execute load (which should handle empty/default) or skip?
-                // CsvHandler.ReadCsv handles missing files by returning empty list.
-                // But we should track that we "checked" it.
-                // If it doesn't exist, maybe we don't cache timestamp (or cache DateTime.MinValue).
-                // Let's run loadAction to ensure properties are initialized to empty.
-                loadAction();
+                if (_fileTimestamps.TryGetValue(fileName, out var sentinelTime) && sentinelTime == System.DateTime.MinValue)
+                    return; // Đã biết file không tồn tại từ lần trước, bỏ qua
+
+                loadAction(); // Khởi tạo property về giá trị rỗng/mặc định
+                _fileTimestamps[fileName] = System.DateTime.MinValue; // Cache trạng thái "không tồn tại"
                 return;
             }
 
             var currentWriteTime = System.IO.File.GetLastWriteTimeUtc(fullPath);
             if (_fileTimestamps.TryGetValue(fileName, out var cachedTime) && cachedTime == currentWriteTime)
             {
-                return; // Not changed
+                return; // Chưa thay đổi, bỏ qua
             }
 
             loadAction();

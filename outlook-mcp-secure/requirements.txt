@@ -1,0 +1,22 @@
+# ============================================================
+# Danh sách thư viện cần cài cho Claude-Outlook MCP Secure
+# ============================================================
+# Lưu ý: tomllib là built-in từ Python 3.11+ (không cần cài)
+# Lưu ý: BeautifulSoup4 dùng để strip HTML trong body email
+# ============================================================
+
+# --- MCP framework (giao thức kết nối Claude <-> server) ---
+mcp>=1.0.0
+
+# --- Tương tác Outlook qua Windows COM API ---
+pywin32>=306
+
+# --- Lưu trữ API key an toàn trong Windows Credential Manager ---
+keyring>=24.0.0
+
+# --- Parse và strip HTML trong nội dung email ---
+beautifulsoup4>=4.12.0
+
+# --- Validate email address theo chuẩn RFC 5322 ---
+# (email-validator dùng trong validator.py)
+email-validator>=2.1.0

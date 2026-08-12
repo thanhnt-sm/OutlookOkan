@@ -1,0 +1,28 @@
+{
+  "_comment": [
+    "File này cấu hình MCP server 'outlook' cho Claude Code CLI.",
+    "",
+    "CÁCH SỬ DỤNG — chọn 1 trong 2 cách:",
+    "",
+    "Cách A (khuyến nghị): Chạy lệnh sau từ thư mục dự án:",
+    "  claude mcp add outlook -- .\\venv\\Scripts\\python.exe server.py",
+    "",
+    "Cách B (thủ công): Thay ABSOLUTE_PATH_TO_THIS_DIR bên dưới",
+    "bằng đường dẫn tuyệt đối tới thư mục chứa file này,",
+    "sau đó merge khối 'mcpServers' vào file ~/.claude/config.json.",
+    "",
+    "Ví dụ cwd đúng: D:\\\\100.Software\\\\Github\\\\OutlookOkan\\\\outlook-mcp-secure",
+    "",
+    "LƯU Ý BẢO MẬT:",
+    "- Server chỉ lắng nghe trên stdio (không mở port mạng).",
+    "- Không đặt API key vào file này — dùng setup.ps1 để lưu vào Credential Manager.",
+    "- Đảm bảo Outlook Desktop đang mở trước khi Claude gọi bất kỳ tool nào."
+  ],
+  "mcpServers": {
+    "outlook": {
+      "command": ".\\venv\\Scripts\\python.exe",
+      "args": ["server.py"],
+      "cwd": "ABSOLUTE_PATH_TO_THIS_DIR"
+    }
+  }
+}

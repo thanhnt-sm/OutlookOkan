@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"><!-- base href="https://4daf5f7a-4070-4a58-bcc9-a45c0b8f62f2.frame.claudeusercontent.com/_f/1782241605-6649/" --><script>(()=>{function B(j){if(window===top)return;if(j.type==="auxclick"&&j.button!==1)return;const y=j.composedPath?j.composedPath():[j.target];let k=null;for(let x=0;x<y.length;x++){const q=y[x];if(q&&q.matches&&q.matches("a[href],area[href]")){k=q;break}}if(!k&&j.target&&j.target.closest){k=j.target.closest("a[href],area[href]")}if(!k)return;const z=k.getAttribute("href");if(!z)return;let m,A;try{m=new URL(z,document.baseURI);A=new URL(document.baseURI).origin}catch{return}if((m.protocol==="http:"||m.protocol==="https:")&&m.origin!==A){j.preventDefault();parent.postMessage({__frame_nav:true,url:m.href},"*")}}addEventListener("click",B,true);addEventListener("auxclick",B,true);})();</script><meta charset="utf8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>Hướng dẫn sử dụng Claude + Outlook MCP</title>
+<style>
+  :root {
+    --blue: #1a73e8; --blue-light: #e8f0fe;
+    --green: #1e8e3e; --green-light: #e6f4ea;
+    --orange: #e37400; --orange-light: #fef3e2;
+    --red: #d93025; --red-light: #fce8e6;
+    --gray: #5f6368; --border: #dadce0;
+    --surface: #f8f9fa; --bg: #fff;
+    font-size: 15px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f1f3f4; color: #202124; }
+
+  .hero {
+    background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+    color: white; padding: 40px 32px 32px; text-align: center;
+  }
+  .hero h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
+  .hero .sub { font-size: 15px; opacity: .85; }
+  .badge {
+    display: inline-block; background: rgba(255,255,255,.2);
+    padding: 4px 12px; border-radius: 20px; font-size: 12px; margin-top: 12px;
+  }
+
+  .container { max-width: 860px; margin: 24px auto; padding: 0 16px 48px; }
+
+  .card {
+    background: white; border-radius: 12px; padding: 24px;
+    margin-bottom: 20px; border: 1px solid var(--border);
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  }
+  .card h2 {
+    font-size: 17px; font-weight: 600; color: #202124;
+    margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+  }
+  .card h2 .icon { font-size: 22px; }
+
+  .step-num {
+    width: 28px; height: 28px; border-radius: 50%; background: var(--blue);
+    color: white; font-size: 13px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+
+  .tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 600px) { .tool-grid { grid-template-columns: 1fr; } }
+
+  .tool-card {
+    border: 1px solid var(--border); border-radius: 10px; padding: 16px;
+    background: var(--surface);
+  }
+  .tool-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .tool-card p { font-size: 13px; color: var(--gray); line-height: 1.5; margin-bottom: 8px; }
+  .tag {
+    font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600;
+    display: inline-block;
+  }
+  .tag-read { background: var(--blue-light); color: var(--blue); }
+  .tag-write { background: var(--orange-light); color: var(--orange); }
+
+  .example-box {
+    background: #f8f9fa; border-left: 3px solid var(--blue);
+    border-radius: 0 8px 8px 0; padding: 14px 16px; margin: 10px 0;
+    font-size: 13px; line-height: 1.7;
+  }
+  .example-box strong { color: var(--blue); display: block; margin-bottom: 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
+  .prompt { font-style: italic; color: #202124; }
+
+  .alert {
+    border-radius: 8px; padding: 14px 16px; margin: 12px 0;
+    font-size: 13px; line-height: 1.6; display: flex; gap: 10px;
+  }
+  .alert-icon { font-size: 18px; flex-shrink: 0; }
+  .alert-warn { background: var(--orange-light); border: 1px solid #f9ab00; }
+  .alert-ok { background: var(--green-light); border: 1px solid #34a853; }
+  .alert-info { background: var(--blue-light); border: 1px solid var(--blue); }
+  .alert-danger { background: var(--red-light); border: 1px solid var(--red); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 10px 12px; background: var(--surface); color: var(--gray); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
+  td { padding: 10px 12px; border-top: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: 1px solid var(--border); }
+
+  .status-ok { color: var(--green); font-weight: 600; }
+  .status-warn { color: var(--orange); font-weight: 600; }
+
+  code {
+    background: #f1f3f4; border: 1px solid var(--border);
+    border-radius: 4px; padding: 1px 6px; font-family: 'Consolas', monospace;
+    font-size: 12.5px; color: #c62828;
+  }
+
+  .flow {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    margin: 12px 0; font-size: 13px;
+  }
+  .flow-box {
+    background: var(--blue-light); color: var(--blue); border-radius: 6px;
+    padding: 6px 12px; font-weight: 500; white-space: nowrap;
+  }
+  .flow-arrow { color: var(--gray); font-size: 16px; }
+
+  .prereq-row { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border); }
+  .prereq-row:first-child { border-top: none; }
+  .check { font-size: 18px; flex-shrink: 0; }
+
+  .tip { font-size: 12px; color: var(--gray); margin-top: 6px; font-style: italic; }
+  .section-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--gray); font-weight: 600; margin-bottom: 12px; }
+</style>
+
+<div class="hero">
+  <h1>Claude + Outlook MCP</h1>
+  <div class="sub">Tích hợp Claude AI với Outlook Desktop — Bảo mật cấp doanh nghiệp</div>
+  <div class="badge">📧 thanhnt@softmart.net.vn &nbsp;|&nbsp; 6 tools &nbsp;|&nbsp; Local only</div>
+</div>
+
+<div class="container">
+
+  <!-- Điều kiện -->
+  <div class="card">
+    <h2><span class="icon">✅</span> Điều kiện sử dụng</h2>
+    <div class="prereq-row">
+      <span class="check">📬</span>
+      <div><strong>Mở Outlook Desktop trước</strong><br><span class="tip">MCP server kết nối vào Outlook đang chạy. Nếu Outlook chưa mở, các tool sẽ báo lỗi.</span></div>
+    </div>
+    <div class="prereq-row">
+      <span class="check">💻</span>
+      <div><strong>Dùng Claude Code CLI trong thư mục dự án</strong><br>
+        <code>D:\100.Software\Github\OutlookOkan\outlook-mcp-secure</code><br>
+        <span class="tip">MCP scope hiện tại là local — chỉ hoạt động 
+trong thư mục này. Muốn dùng ở mọi nơi: chạy lệnh đổi sang user scope 
+(xem phần cuối).</span>
+      </div>
+    </div>
+    <div class="prereq-row">
+      <span class="check">💬</span>
+      <div><strong>Hỏi Claude tự nhiên bằng tiếng Việt</strong><br><span class="tip">Claude tự chọn tool phù hợp — không cần biết tên tool.</span></div>
+    </div>
+  </div>
+
+  <!-- 6 Tools -->
+  <div class="card">
+    <h2><span class="icon">🔧</span> 6 Chức năng có sẵn</h2>
+    <div class="tool-grid">
+
+      <div class="tool-card">
+        <h3>📁 Xem thư mục <span class="tag tag-read">Đọc</span></h3>
+        <p>Liệt kê các thư mục được phép truy cập và thống kê số mail trong mỗi thư mục.</p>
+        <div class="example-box">
+          <strong>Ví dụ hỏi Claude</strong>
+          <span class="prompt">"Inbox đang có bao nhiêu mail chưa đọc?"</span>
+        </div>
+      </div>
+
+      <div class="tool-card">
+        <h3>📋 Liệt kê email <span class="tag tag-read">Đọc</span></h3>
+        <p>Lấy danh sách email trong một thư mục: tiêu đề, người gửi, thời gian, có đính kèm không.</p>
+        <div class="example-box">
+          <strong>Ví dụ hỏi Claude</strong>
+          <span class="prompt">"Cho tôi xem 10 mail mới nhất trong Inbox"</span>
+        </div>
+      </div>
+
+      <div class="tool-card">
+        <h3>📖 Đọc nội dung email <span class="tag tag-read">Đọc</span></h3>
+        <p>Đọc toàn bộ nội dung một email, bao gồm người nhận, CC, và danh sách file đính kèm.</p>
+        <div class="example-box">
+          <strong>Ví dụ hỏi Claude</strong>
+          <span class="prompt">"Mở mail vừa rồi ra đọc nội dung đầy đủ cho tôi"</span>
+        </div>
+      </div>
+
+      <div class="tool-card">
+        <h3>🔍 Tìm kiếm email <span class="tag tag-read">Đọc</span></h3>
+        <p>Tìm email theo từ khóa trong tiêu đề (subject). Hỗ trợ lọc theo thư mục.</p>
+        <div class="example-box">
+          <strong>Ví dụ hỏi Claude</strong>
+          <span class="prompt">"Tìm tất cả mail có chữ 'hợp đồng' trong tiêu đề"</span>
+        </div>
+      </div>
+
+      <div class="tool-card">
+        <h3>✍️ Soạn email mới <span class="tag tag-write">Soạn thảo</span></h3>
+        <p>Claude soạn nội dung, Outlook mở cửa sổ để bạn xem lại. Bạn tự bấm Gửi.</p>
+        <div class="example-box">
+          <strong>Ví dụ hỏi Claude</strong>
+          <span class="prompt">"Soạn mail gửi anh@example.com xin lịch họp thứ 3 tuần sau"</span>
+        </div>
+      </div>
+
+      <div class="tool-card">
+        <h3>↩️ Trả lời email <span class="tag tag-write">Soạn thảo</span></h3>
+        <p>Claude soạn phần trả lời, Outlook mở cửa sổ reply có kèm mail gốc. Bạn tự bấm Gửi.</p>
+        <div class="example-box">
+          <strong>Ví dụ hỏi Claude</strong>
+          <span class="prompt">"Trả lời mail này, nói là tôi đồng ý với lịch họp"</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="alert alert-warn" style="margin-top: 16px;">
+      <span class="alert-icon">⚠️</span>
+      <div><strong>Lưu ý quan trọng về soạn thảo:</strong> Claude <strong>không bao giờ tự gửi email</strong>. Khi dùng "Soạn email" hoặc "Trả lời", Outlook sẽ mở cửa sổ để bạn kiểm tra và bấm Gửi thủ công.</div>
+    </div>
+  </div>
+
+  <!-- Luồng sử dụng -->
+  <div class="card">
+    <h2><span class="icon">🔄</span> Luồng hoạt động</h2>
+    <div class="flow">
+      <div class="flow-box">Bạn gõ câu hỏi</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box">Claude chọn tool phù hợp</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box">MCP server gọi Outlook COM</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box">Claude trả lời / mở cửa sổ</div>
+    </div>
+    <p style="font-size: 13px; color: var(--gray);">Toàn bộ dữ liệu email chạy <strong>cục bộ trên máy bạn</strong>. Chỉ nội dung bạn gõ cho Claude mới đi qua internet (đến Anthropic).</p>
+  </div>
+
+  <!-- Ví dụ thực tế -->
+  <div class="card">
+    <h2><span class="icon">💡</span> Ví dụ sử dụng thực tế</h2>
+
+    <div class="section-label">Đọc &amp; tóm tắt</div>
+    <div class="example-box">
+      <strong>Câu hỏi mẫu</strong>
+      <span class="prompt">"Tóm tắt các mail chưa đọc trong Inbox hôm nay cho tôi"</span>
+    </div>
+    <div class="example-box">
+      <strong>Câu hỏi mẫu</strong>
+      <span class="prompt">"Mail nào trong Inbox cần tôi phản hồi gấp?"</span>
+    </div>
+    <div class="example-box">
+      <strong>Câu hỏi mẫu</strong>
+      <span class="prompt">"Trong mail UAT vừa đọc có deadline nào không?"</span>
+    </div>
+
+    <div class="section-label" style="margin-top: 16px;">Tìm kiếm</div>
+    <div class="example-box">
+      <strong>Câu hỏi mẫu</strong>
+      <span class="prompt">"Tìm tất cả mail có chữ 'invoice' trong Inbox"</span>
+    </div>
+    <div class="example-box">
+      <strong>Câu hỏi mẫu</strong>
+      <span class="prompt">"Tìm mail liên quan đến dự án CLIMS trong Sent Items"</span>
+    </div>
+
+    <div class="section-label" style="margin-top: 16px;">Soạn thảo</div>
+    <div class="example-box">
+      <strong>Câu hỏi mẫu</strong>
+      <span class="prompt">"Soạn mail từ chối lịch họp này nhưng đề xuất dời sang thứ 5"</span>
+    </div>
+    <div class="example-box">
+      <strong>Câu hỏi mẫu</strong>
+      <span class="prompt">"Trả lời mail này bằng tiếng Anh, lịch sự, nói rằng chúng tôi sẽ phản hồi trong 2 ngày làm việc"</span>
+    </div>
+  </div>
+
+  <!-- Thư mục được phép -->
+  <div class="card">
+    <h2><span class="icon">📂</span> Thư mục được phép truy cập</h2>
+    <table>
+      <tbody><tr><th>Tên thư mục</th><th>Trạng thái</th><th>Ghi chú</th></tr>
+      <tr><td>Inbox</td><td class="status-ok">✔ Được phép</td><td>Hộp thư đến (tên tiếng Anh)</td></tr>
+      <tr><td>Hộp thư đến</td><td class="status-ok">✔ Được phép</td><td>Hộp thư đến (tên tiếng Việt)</td></tr>
+      <tr><td>Sent Items</td><td class="status-ok">✔ Được phép</td><td>Thư đã gửi (tiếng Anh)</td></tr>
+      <tr><td>Mục đã gửi</td><td class="status-ok">✔ Được phép</td><td>Thư đã gửi (tiếng Việt)</td></tr>
+      <tr><td>Drafts</td><td class="status-ok">✔ Được phép</td><td>Bản nháp (tiếng Anh)</td></tr>
+      <tr><td>Bản nháp</td><td class="status-ok">✔ Được phép</td><td>Bản nháp (tiếng Việt)</td></tr>
+      <tr><td>Thư mục khác</td><td class="status-warn">⛔ Bị chặn</td><td>Không trong danh sách cho phép</td></tr>
+    </tbody></table>
+    <p class="tip" style="margin-top: 10px;">Muốn thêm thư mục: sửa <code>allowed_folders</code> trong file <code>config.toml</code></p>
+  </div>
+
+  <!-- Giới hạn kỹ thuật -->
+  <div class="card">
+    <h2><span class="icon">📊</span> Giới hạn kỹ thuật hiện tại</h2>
+    <table>
+      <tbody><tr><th>Giới hạn</th><th>Giá trị</th></tr>
+      <tr><td>Số email tối đa mỗi lần liệt kê</td><td>50 email</td></tr>
+      <tr><td>Số kết quả tối đa khi tìm kiếm</td><td>30 email</td></tr>
+      <tr><td>Độ dài nội dung email tối đa</td><td>15,000 ký tự (tự cắt nếu dài hơn)</td></tr>
+      <tr><td>Số người nhận tối đa một draft</td><td>10 người</td></tr>
+      <tr><td>Timeout Outlook COM</td><td>30 giây</td></tr>
+      <tr><td>Tìm kiếm trong</td><td>Tiêu đề (subject) — chưa hỗ trợ nội dung</td></tr>
+      <tr><td>File đính kèm</td><td>Xem tên file — chưa đọc được nội dung</td></tr>
+    </tbody></table>
+  </div>
+
+  <!-- Bảo mật -->
+  <div class="card">
+    <h2><span class="icon">🔒</span> Bảo mật &amp; An toàn dữ liệu</h2>
+
+    <div class="alert alert-ok">
+      <span class="alert-icon">✅</span>
+      <div><strong>Email KHÔNG bao giờ bị tự động gửi đi.</strong> Mọi thao tác soạn/reply chỉ mở cửa sổ Outlook. Bạn quyết định bấm Gửi hay Hủy.</div>
+    </div>
+
+    <div class="alert alert-ok">
+      <span class="alert-icon">✅</span>
+      <div><strong>Dữ liệu email chạy hoàn toàn cục bộ.</strong> Không gửi nội dung email đến bên thứ ba nào ngoài Anthropic (phần bạn hỏi Claude).</div>
+    </div>
+
+    <div class="alert alert-ok">
+      <span class="alert-icon">✅</span>
+      <div><strong>Mọi thao tác đều được ghi nhật ký kiểm toán</strong> (audit log) tại thư mục <code>logs/</code>, bảo vệ bằng SHA-256. Log KHÔNG chứa nội dung email.</div>
+    </div>
+
+    <div class="alert alert-info">
+      <span class="alert-icon">ℹ️</span>
+      <div><strong>Anthropic cam kết không lưu/train dữ liệu</strong> với tài khoản trả phí (Claude Pro/API). Nội dung câu hỏi bạn gõ đi qua internet đến Anthropic — tránh gửi thông tin tuyệt mật.</div>
+    </div>
+  </div>
+
+  <!-- Xử lý sự cố -->
+  <div class="card">
+    <h2><span class="icon">🛠️</span> Xử lý sự cố thường gặp</h2>
+    <table>
+      <tbody><tr><th>Vấn đề</th><th>Nguyên nhân</th><th>Giải pháp</th></tr>
+      <tr>
+        <td>"Đảm bảo Outlook đang chạy"</td>
+        <td>Outlook Desktop chưa mở</td>
+        <td>Mở Outlook Desktop rồi thử lại</td>
+      </tr>
+      <tr>
+        <td>"Thư mục không được phép"</td>
+        <td>Thư mục chưa có trong allowlist</td>
+        <td>Thêm tên thư mục vào <code>config.toml</code></td>
+      </tr>
+      <tr>
+        <td>Không tìm thấy mail</td>
+        <td>Inbox trống hoặc từ khóa không khớp tiêu đề</td>
+        <td>Thử thư mục khác hoặc từ khóa khác</td>
+      </tr>
+      <tr>
+        <td>Outlook không mở cửa sổ soạn thảo</td>
+        <td>COM timeout hoặc Outlook bị treo</td>
+        <td>Restart Outlook và thử lại</td>
+      </tr>
+      <tr>
+        <td>MCP không kết nối được</td>
+        <td>Chạy sai thư mục hoặc scope</td>
+        <td>Đảm bảo đang ở thư mục dự án; chạy <code>claude mcp list</code> kiểm tra</td>
+      </tr>
+    </tbody></table>
+  </div>
+
+  <!-- Nâng cấp scope -->
+  <div class="card">
+    <h2><span class="icon">⚙️</span> Muốn dùng ở mọi thư mục (nâng cấp scope)</h2>
+    <p style="font-size: 13px; color: var(--gray); margin-bottom: 12px;">Hiện tại MCP chỉ hoạt động trong thư mục dự án. Để dùng được từ <strong>bất kỳ thư mục nào</strong> trên máy:</p>
+    <div class="example-box">
+      <strong>Chạy 2 lệnh trong terminal</strong>
+      <span class="prompt" style="font-family: monospace; font-style: normal; font-size: 12px; display: block; margin-top: 6px; white-space: pre-wrap;">claude mcp remove outlook-secure -s local
+
+claude mcp add outlook-secure --scope user -- ^
+  "D:\100.Software\Github\OutlookOkan\outlook-mcp-secure\venv\Scripts\python.exe" ^
+  "D:\100.Software\Github\OutlookOkan\outlook-mcp-secure\server.py"</span>
+    </div>
+  </div>
+
+  <p style="text-align: center; font-size: 12px; color: var(--gray); margin-top: 16px;">
+    outlook-mcp-secure v1.0.0 &nbsp;·&nbsp; thanhnt@softmart.net.vn &nbsp;·&nbsp; 2026-06-24
+  </p>
+
+</div>
+
+</body></html>

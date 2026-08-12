@@ -1,0 +1,41 @@
+# Cấu hình Claude-Outlook MCP Secure
+# Tài khoản: thanhnt@softmart.net.vn
+# Store PST: 20251128
+
+[outlook]
+account_name = "thanhnt@softmart.net.vn"
+pst_display_name = ""
+
+[security]
+read_only_mode = false
+
+# Tên folder ĐÚNG theo Outlook thực tế (kiểm tra ngày 2026-06-24)
+# Inbox trống do mail được phân loại tự động vào folder dự án
+allowed_folders = [
+    "Inbox",
+    "Sent Items",
+    "Drafts",
+    "Deleted Items",
+    "PVC.CLIMS",
+    "NCB.FlexCash",
+    "YMH.sCPM",
+    "Softmart",
+    "PVC.Collection",
+]
+
+max_results = 50
+max_recipients_per_draft = 10
+
+[limits]
+email_body_max_length = 15000
+list_emails_max_limit = 50
+search_max_results = 30
+max_calls_per_minute = 60
+com_operation_timeout_seconds = 30
+
+[audit]
+log_dir = "logs"
+retain_days = 90
+
+[server]
+log_level = "INFO"
