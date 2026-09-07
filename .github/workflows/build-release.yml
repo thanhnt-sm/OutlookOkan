@@ -224,9 +224,18 @@ jobs:
             Export-PfxCertificate -Cert $newCert -FilePath $pfx -Password $pwd
         }
         
-        Import-PfxCertificate -FilePath $pfx -CertStoreLocation "Cert:\CurrentUser\My" -Password $pwd
+        $certObj = Import-PfxCertificate -FilePath $pfx -CertStoreLocation "Cert:\CurrentUser\My" -Password $pwd
         Import-PfxCertificate -FilePath $pfx -CertStoreLocation "Cert:\LocalMachine\Root" -Password $pwd
-
+        
+        $thumbprint = $certObj.Thumbprint
+        Write-Host "Imported Certificate Thumbprint: $thumbprint"
+        
+        $csprojPath = "${{ github.workspace }}\OutlookOkan\OutlookOkan.csproj"
+        if (Test-Path $csprojPath) {
+            $csprojContent = Get-Content $csprojPath -Raw
+            $csprojContent = $csprojContent -replace '<ManifestCertificateThumbprint>.*</ManifestCertificateThumbprint>', "<ManifestCertificateThumbprint>$thumbprint</ManifestCertificateThumbprint>"
+            Set-Content $csprojPath $csprojContent
+        }
     - name: 🏗️ Build
       shell: pwsh
       run: |
