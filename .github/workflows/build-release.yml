@@ -239,12 +239,13 @@ jobs:
             Set-Content $csprojPath $csprojContent
         }
     - name: 🔧 Fix VSTO Hosting DLL Issue
-      shell: pwsh
+      shell: powershell
       run: |
         $dlls = Get-ChildItem -Path "C:\Program Files\Microsoft Visual Studio" -Filter "Microsoft.VisualStudio.Tools.Applications.Hosting.dll" -Recurse -ErrorAction SilentlyContinue
         if ($dlls.Count -gt 0) {
             $dllPath = $dlls[0].FullName
             Write-Host "Found DLL at: $dllPath"
+            Add-Type -AssemblyName System.EnterpriseServices
             $publish = New-Object System.EnterpriseServices.Internal.Publish
             $publish.GacInstall($dllPath)
             Write-Host "Installed to GAC successfully."
