@@ -295,7 +295,7 @@ jobs:
           (New-Object System.EnterpriseServices.Internal.Publish).GacInstall($found)
           Write-Host "GAC install OK."
         } else {
-          Write-Warning "Could not find $dllName — VerifyClickOnceSigningSettings may fail."
+          Write-Warning "Could not find $dllName - VerifyClickOnceSigningSettings may fail."
         }
 
     - name: MSBuild Publish
