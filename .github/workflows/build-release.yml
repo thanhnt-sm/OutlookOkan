@@ -176,21 +176,24 @@ jobs:
 
     - name: 🔧 Setup MSBuild
       uses: microsoft/setup-msbuild@v2
-      with:
-        msbuild-architecture: x86
 
     - name: 📦 Setup NuGet
       uses: NuGet/setup-nuget@v2
 
     - name: 📥 Restore Packages
       run: nuget restore OutlookOkan.sln
+      shell: pwsh
 
     - name: 🔄 Stamp Version
       shell: pwsh
       run: |
         $version = "${{ needs.version.outputs.version }}".TrimStart('v')
         $parts = $version -split '\.'
-        $asmVersion = "$($parts[0]).$($parts[1]).$($parts[2]).0"
+        if ($parts.Count -ge 3) {
+            $asmVersion = "$($parts[0]).$($parts[1]).$($parts[2]).0"
+        } else {
+            $asmVersion = "1.0.0.0"
+        }
         
         $path = "OutlookOkan/Properties/AssemblyInfo.cs"
         if (Test-Path $path) {
@@ -198,6 +201,7 @@ jobs:
           $content = $content -replace 'AssemblyVersion\("[^"]*"\)', "AssemblyVersion(`"$asmVersion`")"
           $content = $content -replace 'AssemblyFileVersion\("[^"]*"\)', "AssemblyFileVersion(`"$asmVersion`")"
           Set-Content $path $content
+          Write-Host "Stamped version: $asmVersion"
         }
 
     - name: 🔐 Check and Import Certificate
@@ -212,54 +216,85 @@ jobs:
                 $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($pfx, "123456")
                 if ($cert.NotAfter -gt (Get-Date)) {
                     $valid = $true
+                    Write-Host "Existing PFX is valid, expires: $($cert.NotAfter)"
                 } else {
                     Write-Host "Existing PFX is expired."
                 }
             } catch {
-                Write-Host "Existing PFX is invalid or password doesn't match."
+                Write-Host "Existing PFX is invalid or password doesn't match: $_"
             }
+        } else {
+            Write-Host "PFX file not found."
         }
         
         if (-not $valid) {
             Write-Host "Generating a new self-signed certificate for CI..."
             $newCert = New-SelfSignedCertificate -Subject "CN=OutlookOkan_CI" -CertStoreLocation "Cert:\CurrentUser\My" -Type CodeSigningCert
-            Export-PfxCertificate -Cert $newCert -FilePath $pfx -Password $pwd
+            Export-PfxCertificate -Cert $newCert -FilePath $pfx -Password $pwd | Out-Null
+            Write-Host "Generated new PFX certificate."
         }
         
         $certObj = Import-PfxCertificate -FilePath $pfx -CertStoreLocation "Cert:\CurrentUser\My" -Password $pwd
-        Import-PfxCertificate -FilePath $pfx -CertStoreLocation "Cert:\LocalMachine\Root" -Password $pwd
+        try {
+            Import-PfxCertificate -FilePath $pfx -CertStoreLocation "Cert:\LocalMachine\Root" -Password $pwd | Out-Null
+        } catch {
+            Write-Host "Warning: Could not install to LocalMachine\Root (may need admin). Continuing..."
+        }
         
         $thumbprint = $certObj.Thumbprint
-        Write-Host "Imported Certificate Thumbprint: $thumbprint"
+        Write-Host "Certificate Thumbprint: $thumbprint"
         
         $csprojPath = "${{ github.workspace }}\OutlookOkan\OutlookOkan.csproj"
         if (Test-Path $csprojPath) {
             $csprojContent = Get-Content $csprojPath -Raw
-            $csprojContent = $csprojContent -replace '<ManifestCertificateThumbprint>.*</ManifestCertificateThumbprint>', "<ManifestCertificateThumbprint>$thumbprint</ManifestCertificateThumbprint>"
+            $csprojContent = $csprojContent -replace '<ManifestCertificateThumbprint>[^<]*</ManifestCertificateThumbprint>', "<ManifestCertificateThumbprint>$thumbprint</ManifestCertificateThumbprint>"
             Set-Content $csprojPath $csprojContent
+            Write-Host "Updated ManifestCertificateThumbprint in csproj."
         }
-    - name: 🔧 Fix VSTO Hosting DLL Issue
+
+    - name: 🔧 Install VSTO Hosting DLL to GAC
       shell: powershell
       run: |
-        $dlls = Get-ChildItem -Path "C:\Program Files\Microsoft Visual Studio" -Filter "Microsoft.VisualStudio.Tools.Applications.Hosting.dll" -Recurse -ErrorAction SilentlyContinue
-        if ($dlls.Count -gt 0) {
-            $dllPath = $dlls[0].FullName
-            Write-Host "Found DLL at: $dllPath"
+        $searchPaths = @(
+            "C:\Program Files\Microsoft Visual Studio",
+            "C:\Program Files (x86)\Microsoft Visual Studio",
+            "C:\Program Files\Common Files\Microsoft Shared\VSTO",
+            "C:\Program Files (x86)\Common Files\Microsoft Shared\VSTO"
+        )
+        $dllName = "Microsoft.VisualStudio.Tools.Applications.Hosting.dll"
+        $found = $null
+        
+        foreach ($basePath in $searchPaths) {
+            if (Test-Path $basePath) {
+                $dlls = Get-ChildItem -Path $basePath -Filter $dllName -Recurse -ErrorAction SilentlyContinue
+                if ($dlls.Count -gt 0) {
+                    $found = $dlls[0].FullName
+                    break
+                }
+            }
+        }
+        
+        if ($found) {
+            Write-Host "Found DLL at: $found"
             Add-Type -AssemblyName System.EnterpriseServices
             $publish = New-Object System.EnterpriseServices.Internal.Publish
-            $publish.GacInstall($dllPath)
+            $publish.GacInstall($found)
             Write-Host "Installed to GAC successfully."
         } else {
-            Write-Host "Could not find Microsoft.VisualStudio.Tools.Applications.Hosting.dll"
+            Write-Host "Warning: Could not find $dllName. Build may fail with VerifyClickOnceSigningSettings error."
         }
 
     - name: 🏗️ Build
       shell: pwsh
       run: |
         msbuild OutlookOkan/OutlookOkan.csproj `
-          /t:Publish /p:Configuration=Release /p:Platform=AnyCPU `
-          /p:PublishDir=app.publish/ /p:ManifestTimestampUrl="" `
-          /fl "/flp:logfile=msbuild.log;verbosity=normal"
+          /t:Publish `
+          /p:Configuration=Release `
+          /p:Platform=AnyCPU `
+          /p:PublishDir=app.publish/ `
+          /p:ManifestTimestampUrl="" `
+          /p:SignManifests=false `
+          /fl "/flp:logfile=${{ github.workspace }}\msbuild.log;verbosity=normal"
 
     - name: 📦 Upload Artifacts
       uses: actions/upload-artifact@v4
@@ -267,13 +302,14 @@ jobs:
         name: OutlookOkan-${{ needs.version.outputs.version }}
         path: OutlookOkan/app.publish/**
         retention-days: 30
-        
-    - name: 📋 Upload Log
+
+    - name: 📋 Upload Build Log
       if: always()
       uses: actions/upload-artifact@v4
       with:
         name: build-log
-        path: msbuild.log
+        path: ${{ github.workspace }}\msbuild.log
+        if-no-files-found: ignore
         retention-days: 7
 
   # ============================================
