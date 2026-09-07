@@ -198,11 +198,32 @@ jobs:
           Set-Content $path $content
         }
 
-    - name: 🔐 Import Certificate
+    - name: 🔐 Check and Import Certificate
       shell: pwsh
       run: |
         $pfx = "${{ github.workspace }}\OutlookOkan\OutlookOkan_CI.pfx"
         $pwd = ConvertTo-SecureString "123456" -AsPlainText -Force
+        
+        $valid = $false
+        if (Test-Path $pfx) {
+            try {
+                $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($pfx, "123456")
+                if ($cert.NotAfter -gt (Get-Date)) {
+                    $valid = $true
+                } else {
+                    Write-Host "Existing PFX is expired."
+                }
+            } catch {
+                Write-Host "Existing PFX is invalid or password doesn't match."
+            }
+        }
+        
+        if (-not $valid) {
+            Write-Host "Generating a new self-signed certificate for CI..."
+            $newCert = New-SelfSignedCertificate -Subject "CN=OutlookOkan_CI" -CertStoreLocation "Cert:\CurrentUser\My" -Type CodeSigningCert
+            Export-PfxCertificate -Cert $newCert -FilePath $pfx -Password $pwd
+        }
+        
         Import-PfxCertificate -FilePath $pfx -CertStoreLocation "Cert:\CurrentUser\My" -Password $pwd
         Import-PfxCertificate -FilePath $pfx -CertStoreLocation "Cert:\LocalMachine\Root" -Password $pwd
 
