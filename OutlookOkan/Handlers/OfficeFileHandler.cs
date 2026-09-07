@@ -1,4 +1,4 @@
-﻿using Microsoft.Office.Core;
+using Microsoft.Office.Core;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -47,6 +47,15 @@ namespace OutlookOkan.Handlers
                         // Nếu xảy ra ngoại lệ sai mật khẩu, xác định là DOCX có mật khẩu.
                         isEncrypted = e.HResult == -2146822880;
                     }
+                    finally
+                    {
+                        try
+                        {
+                            tempWordApp.Quit();
+                            _ = Marshal.ReleaseComObject(tempWordApp);
+                        }
+                        catch (Exception) { }
+                    }
                     break;
                 case "xls":
                 case "xlsx":
@@ -76,6 +85,15 @@ namespace OutlookOkan.Handlers
                         // Nếu xảy ra ngoại lệ sai mật khẩu, xác định là XLSX có mật khẩu.
                         isEncrypted = e.HResult == -2146827284;
                     }
+                    finally
+                    {
+                        try
+                        {
+                            tempExcelApp.Quit();
+                            _ = Marshal.ReleaseComObject(tempExcelApp);
+                        }
+                        catch (Exception) { }
+                    }
                     break;
                 case "ppt":
                 case "pptx":
@@ -96,6 +114,15 @@ namespace OutlookOkan.Handlers
                     {
                         // Nếu xảy ra ngoại lệ sai mật khẩu, xác định là PPTX có mật khẩu.
                         isEncrypted = e.HResult == -2147467259;
+                    }
+                    finally
+                    {
+                        try
+                        {
+                            tempPowerPointApp.Quit();
+                            _ = Marshal.ReleaseComObject(tempPowerPointApp);
+                        }
+                        catch (Exception) { }
                     }
                     break;
                 default:
@@ -130,27 +157,40 @@ namespace OutlookOkan.Handlers
                             Visible = false
                         };
 
-                        var excelFile = tempExcelApp.Workbooks.Open(filePath);
-                        Thread.Sleep(10);
-                        if (excelFile != null)
+                        try
                         {
-                            if (excelFile.HasVBProject)
+                            var excelFile = tempExcelApp.Workbooks.Open(filePath);
+                            Thread.Sleep(10);
+                            if (excelFile != null)
                             {
-                                isHasVbProject = true;
-                            }
+                                if (excelFile.HasVBProject)
+                                {
+                                    isHasVbProject = true;
+                                }
 
-                            Thread.Sleep(10);
-                            excelFile.Close(false);
-                            Thread.Sleep(10);
-                            _ = Marshal.ReleaseComObject(excelFile);
-                            excelFile = null;
+                                Thread.Sleep(10);
+                                excelFile.Close(false);
+                                Thread.Sleep(10);
+                                _ = Marshal.ReleaseComObject(excelFile);
+                                excelFile = null;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            // Log error for debugging purposes
+                            System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Failed to check Excel VBProject: {ex.Message}");
+                        }
+                        finally
+                        {
+                            try
+                            {
+                                tempExcelApp.Quit();
+                                _ = Marshal.ReleaseComObject(tempExcelApp);
+                            }
+                            catch (Exception) { }
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        // Log error for debugging purposes
-                        System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Failed to check Excel VBProject: {ex.Message}");
-                    }
+                    catch (Exception) { }
                     break;
                 case "doc":
                 case "docx":
@@ -166,27 +206,40 @@ namespace OutlookOkan.Handlers
                             Visible = false
                         };
 
-                        var wordFile = tempWordApp.Documents.Open(filePath, Visible: false);
-                        Thread.Sleep(10);
-                        if (wordFile != null)
+                        try
                         {
-                            if (wordFile.HasVBProject)
+                            var wordFile = tempWordApp.Documents.Open(filePath, Visible: false);
+                            Thread.Sleep(10);
+                            if (wordFile != null)
                             {
-                                isHasVbProject = true;
-                            }
+                                if (wordFile.HasVBProject)
+                                {
+                                    isHasVbProject = true;
+                                }
 
-                            Thread.Sleep(10);
-                            wordFile.Close(false);
-                            Thread.Sleep(10);
-                            _ = Marshal.ReleaseComObject(wordFile);
-                            wordFile = null;
+                                Thread.Sleep(10);
+                                wordFile.Close(false);
+                                Thread.Sleep(10);
+                                _ = Marshal.ReleaseComObject(wordFile);
+                                wordFile = null;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            // Log error for debugging purposes
+                            System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Failed to check Word VBProject: {ex.Message}");
+                        }
+                        finally
+                        {
+                            try
+                            {
+                                tempWordApp.Quit();
+                                _ = Marshal.ReleaseComObject(tempWordApp);
+                            }
+                            catch (Exception) { }
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        // Log error for debugging purposes
-                        System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Failed to check Word VBProject: {ex.Message}");
-                    }
+                    catch (Exception) { }
                     break;
                 case "ppt":
                 case "pptx":
@@ -195,27 +248,40 @@ namespace OutlookOkan.Handlers
                     {
                         var tempPptApp = new PowerPoint.Application();
 
-                        var pptFile = tempPptApp.Presentations.Open(filePath, MsoTriState.msoTrue, MsoTriState.msoFalse, MsoTriState.msoFalse);
-                        Thread.Sleep(10);
-                        if (pptFile != null)
+                        try
                         {
-                            if (pptFile.HasVBProject)
+                            var pptFile = tempPptApp.Presentations.Open(filePath, MsoTriState.msoTrue, MsoTriState.msoFalse, MsoTriState.msoFalse);
+                            Thread.Sleep(10);
+                            if (pptFile != null)
                             {
-                                isHasVbProject = true;
-                            }
+                                if (pptFile.HasVBProject)
+                                {
+                                    isHasVbProject = true;
+                                }
 
-                            Thread.Sleep(10);
-                            pptFile.Close();
-                            Thread.Sleep(10);
-                            _ = Marshal.ReleaseComObject(pptFile);
-                            pptFile = null;
+                                Thread.Sleep(10);
+                                pptFile.Close();
+                                Thread.Sleep(10);
+                                _ = Marshal.ReleaseComObject(pptFile);
+                                pptFile = null;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            // Log error for debugging purposes
+                            System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Failed to check PowerPoint VBProject: {ex.Message}");
+                        }
+                        finally
+                        {
+                            try
+                            {
+                                tempPptApp.Quit();
+                                _ = Marshal.ReleaseComObject(tempPptApp);
+                            }
+                            catch (Exception) { }
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        // Log error for debugging purposes
-                        System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Failed to check PowerPoint VBProject: {ex.Message}");
-                    }
+                    catch (Exception) { }
                     break;
                 default:
                     return false;

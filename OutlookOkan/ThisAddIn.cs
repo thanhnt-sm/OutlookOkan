@@ -321,27 +321,29 @@ namespace OutlookOkan
 
         private void CurrentExplorer_SelectionChange()
         {
-          try
-          {
-            // -----------------------------------------------------------------
-            // BƯỚC 0: LAZY INIT — Khởi tạo MAPI và danh sách folder lần đầu tiên
-            // -----------------------------------------------------------------
-            if (!EnsureSecurityInitialized()) return;
+            Outlook.Explorer currentExplorer = null;
+            Outlook.Selection selection = null;
+            try
+            {
+                // -----------------------------------------------------------------
+                // BƯỚC 0: LAZY INIT — Khởi tạo MAPI và danh sách folder lần đầu tiên
+                // -----------------------------------------------------------------
+                if (!EnsureSecurityInitialized()) return;
 
-            // -----------------------------------------------------------------
-            // BƯỚC 1: KIỂM TRA FOLDER HIỆN TẠI
-            // -----------------------------------------------------------------
-            var currentExplorer = Application.ActiveExplorer();
-            var currentFolderName = currentExplorer.CurrentFolder.Name;
+                // -----------------------------------------------------------------
+                // BƯỚC 1: KIỂM TRA FOLDER HIỆN TẠI
+                // -----------------------------------------------------------------
+                currentExplorer = Application.ActiveExplorer();
+                var currentFolderName = currentExplorer.CurrentFolder.Name;
 
-            // Bỏ qua nếu đang ở folder không cần kiểm tra
-            // (Calendar, Contacts, Drafts, Sent Items, v.v.)
-            if (_excludedFolderNames.Contains(currentFolderName)) return;
+                // Bỏ qua nếu đang ở folder không cần kiểm tra
+                // (Calendar, Contacts, Drafts, Sent Items, v.v.)
+                if (_excludedFolderNames.Contains(currentFolderName)) return;
 
-            // -----------------------------------------------------------------
-            // BƯỚC 2: KIỂM TRA SELECTION HỢP LỆ
-            // -----------------------------------------------------------------
-            var selection = currentExplorer.Selection;
+                // -----------------------------------------------------------------
+                // BƯỚC 2: KIỂM TRA SELECTION HỢP LỆ
+                // -----------------------------------------------------------------
+                selection = currentExplorer.Selection;
 
             // Bỏ qua nếu không có selection hoặc chọn nhiều email
             if (selection is null || selection.Count != 1) return;
@@ -490,12 +492,17 @@ namespace OutlookOkan
                 _currentMailItem.BeforeAttachmentRead -= BeforeAttachmentRead;
                 _currentMailItem.BeforeAttachmentRead += BeforeAttachmentRead;
             }
-          }
-          catch (Exception ex)
-          {
-            // Catch ALL exceptions to prevent Outlook Resiliency from disabling add-in
-            System.Diagnostics.Debug.WriteLine($"[OutlookOkan] SelectionChange error (swallowed to protect add-in): {ex.Message}");
-          }
+            }
+            catch (Exception ex)
+            {
+                // Catch ALL exceptions to prevent Outlook Resiliency from disabling add-in
+                System.Diagnostics.Debug.WriteLine($"[OutlookOkan] SelectionChange error (swallowed to protect add-in): {ex.Message}");
+            }
+            finally
+            {
+                SafeReleaseCom(selection);
+                SafeReleaseCom(currentExplorer);
+            }
         }
 
         /// <summary>
@@ -523,156 +530,104 @@ namespace OutlookOkan
             if (_securityForReceivedMail.IsWarnBeforeOpeningEncryptedZip || _securityForReceivedMail.IsWarnLinkFileInTheZip || _securityForReceivedMail.IsWarnOneFileInTheZip || _securityForReceivedMail.IsWarnOfficeFileWithMacroInTheZip || _securityForReceivedMail.IsWarnBeforeOpeningAttachmentsThatContainMacros)
             {
                 var tempDirectoryPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
-                _ = Directory.CreateDirectory(tempDirectoryPath);
                 var tempFilePath = Path.Combine(tempDirectoryPath, Guid.NewGuid().ToString("N"));
-                attachment.SaveAsFile(tempFilePath);
-
-                if (_securityForReceivedMail.IsWarnBeforeOpeningEncryptedZip || _securityForReceivedMail.IsWarnLinkFileInTheZip || _securityForReceivedMail.IsWarnOneFileInTheZip || _securityForReceivedMail.IsWarnOfficeFileWithMacroInTheZip)
-                {
-                    var zipTools = new ZipFileHandler();
-                    var izEncryptedZip = zipTools.CheckZipIsEncryptedAndGetIncludeExtensions(tempFilePath);
-
-                    // Cảnh báo trong trường hợp tệp ZIP được mã hóa
-                    if (_securityForReceivedMail.IsWarnBeforeOpeningEncryptedZip && izEncryptedZip)
-                    {
-                        var dialogResult = MessageBox.Show(Properties.Resources.AttatchmentIsEncryptedZip + Environment.NewLine + Properties.Resources.OpenAttachmentWarning1 + Environment.NewLine + Environment.NewLine + attachment.FileName, Properties.Resources.OpenAttachmentWarning1, MessageBoxButton.YesNo, MessageBoxImage.Warning);
-                        if (dialogResult == MessageBoxResult.Yes)
-                        {
-                            //Open file.
-                        }
-                        else
-                        {
-                            cancel = true;
-                            try
-                            {
-                                File.Delete(tempFilePath);
-                            }
-                            catch (Exception ex)
-                            {
-                                // Log temp file cleanup error
-                                System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Failed to delete temp file (EncryptedZip): {ex.Message}");
-                            }
-                            return;
-                        }
-                    }
-
-                    // Cảnh báo nếu có tệp link trong file Zip
-                    if (_securityForReceivedMail.IsWarnLinkFileInTheZip)
-                    {
-                        if (zipTools.IncludeExtensions.Contains(".lnk") || zipTools.IsContainsShortcut)
-                        {
-                            var dialogResult = MessageBox.Show(Properties.Resources.SuspiciousAttachmentZip_link + Environment.NewLine + Environment.NewLine + Properties.Resources.OpenAttachmentWarning1 + Environment.NewLine + Environment.NewLine + attachment.FileName, Properties.Resources.OpenAttachmentWarning1, MessageBoxButton.YesNo, MessageBoxImage.Error);
-                            if (dialogResult == MessageBoxResult.Yes)
-                            {
-                                //Open file.
-                            }
-                            else
-                            {
-                                cancel = true;
-                                try
-                                {
-                                    File.Delete(tempFilePath);
-                                }
-                                catch (Exception ex)
-                                {
-                                    // Log temp file cleanup error
-                                    System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Failed to delete temp file (LinkInZip): {ex.Message}");
-                                }
-                                return;
-                            }
-                        }
-                    }
-
-                    // Cảnh báo nếu có tệp OneNote trong file Zip
-                    if (_securityForReceivedMail.IsWarnOneFileInTheZip)
-                    {
-                        if (zipTools.IncludeExtensions.Contains(".one"))
-                        {
-                            var dialogResult = MessageBox.Show(Properties.Resources.SuspiciousAttachmentZip_one + Environment.NewLine + Environment.NewLine + Properties.Resources.OpenAttachmentWarning1 + Environment.NewLine + Environment.NewLine + attachment.FileName, Properties.Resources.OpenAttachmentWarning1, MessageBoxButton.YesNo, MessageBoxImage.Error);
-                            if (dialogResult == MessageBoxResult.Yes)
-                            {
-                                //Open file.
-                            }
-                            else
-                            {
-                                cancel = true;
-                                try
-                                {
-                                    File.Delete(tempFilePath);
-                                }
-                                catch (Exception ex)
-                                {
-                                    // Log temp file cleanup error
-                                    System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Failed to delete temp file (OneFileInZip): {ex.Message}");
-                                }
-                                return;
-                            }
-                        }
-                    }
-
-                    // Cảnh báo nếu có tệp Office hỗ trợ macro trong file Zip
-                    if (_securityForReceivedMail.IsWarnOfficeFileWithMacroInTheZip)
-                    {
-                        if (zipTools.IncludeExtensions.Contains(".docm") | zipTools.IncludeExtensions.Contains(".xlsm") | zipTools.IncludeExtensions.Contains(".pptm"))
-                        {
-                            var dialogResult = MessageBox.Show(Properties.Resources.SuspiciousAttachmentZip_macro + Environment.NewLine + Environment.NewLine + Properties.Resources.OpenAttachmentWarning1 + Environment.NewLine + Environment.NewLine + attachment.FileName, Properties.Resources.OpenAttachmentWarning1, MessageBoxButton.YesNo, MessageBoxImage.Error);
-                            if (dialogResult == MessageBoxResult.Yes)
-                            {
-                                //Open file.
-                            }
-                            else
-                            {
-                                cancel = true;
-                                try
-                                {
-                                    File.Delete(tempFilePath);
-                                }
-                                catch (Exception ex)
-                                {
-                                    // Log temp file cleanup error
-                                    System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Failed to delete temp file (MacroInZip): {ex.Message}");
-                                }
-                                return;
-                            }
-                        }
-                    }
-                }
-
-                // Cảnh báo nếu tệp Office có chứa macro
-                if (_securityForReceivedMail.IsWarnBeforeOpeningAttachmentsThatContainMacros)
-                {
-                    if (OfficeFileHandler.CheckOfficeFileHasVbProject(tempFilePath, Path.GetExtension(attachment.FileName).ToLower()))
-                    {
-                        var dialogResult = MessageBox.Show(Properties.Resources.SuspiciousAttachment_macro + Environment.NewLine + Properties.Resources.OpenAttachmentWarning1 + Environment.NewLine + Environment.NewLine + attachment.FileName, Properties.Resources.OpenAttachmentWarning1, MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
-                        if (dialogResult == MessageBoxResult.Yes)
-                        {
-                            //Open file.
-                        }
-                        else
-                        {
-                            cancel = true;
-                            try
-                            {
-                                File.Delete(tempFilePath);
-                            }
-                            catch (Exception ex)
-                            {
-                                // Log temp file cleanup error
-                                System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Failed to delete temp file (MacroFile): {ex.Message}");
-                            }
-                            return;
-                        }
-                    }
-                }
 
                 try
                 {
-                    File.Delete(tempFilePath);
+                    _ = Directory.CreateDirectory(tempDirectoryPath);
+                    attachment.SaveAsFile(tempFilePath);
+
+                    if (_securityForReceivedMail.IsWarnBeforeOpeningEncryptedZip || _securityForReceivedMail.IsWarnLinkFileInTheZip || _securityForReceivedMail.IsWarnOneFileInTheZip || _securityForReceivedMail.IsWarnOfficeFileWithMacroInTheZip)
+                    {
+                        var zipTools = new ZipFileHandler();
+                        var izEncryptedZip = zipTools.CheckZipIsEncryptedAndGetIncludeExtensions(tempFilePath);
+
+                        // Cảnh báo trong trường hợp tệp ZIP được mã hóa
+                        if (_securityForReceivedMail.IsWarnBeforeOpeningEncryptedZip && izEncryptedZip)
+                        {
+                            var dialogResult = MessageBox.Show(Properties.Resources.AttatchmentIsEncryptedZip + Environment.NewLine + Properties.Resources.OpenAttachmentWarning1 + Environment.NewLine + Environment.NewLine + attachment.FileName, Properties.Resources.OpenAttachmentWarning1, MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                            if (dialogResult != MessageBoxResult.Yes)
+                            {
+                                cancel = true;
+                                return;
+                            }
+                        }
+
+                        // Cảnh báo nếu có tệp link trong file Zip
+                        if (_securityForReceivedMail.IsWarnLinkFileInTheZip)
+                        {
+                            if (zipTools.IncludeExtensions.Contains(".lnk") || zipTools.IsContainsShortcut)
+                            {
+                                var dialogResult = MessageBox.Show(Properties.Resources.SuspiciousAttachmentZip_link + Environment.NewLine + Environment.NewLine + Properties.Resources.OpenAttachmentWarning1 + Environment.NewLine + Environment.NewLine + attachment.FileName, Properties.Resources.OpenAttachmentWarning1, MessageBoxButton.YesNo, MessageBoxImage.Error);
+                                if (dialogResult != MessageBoxResult.Yes)
+                                {
+                                    cancel = true;
+                                    return;
+                                }
+                            }
+                        }
+
+                        // Cảnh báo nếu có tệp OneNote trong file Zip
+                        if (_securityForReceivedMail.IsWarnOneFileInTheZip)
+                        {
+                            if (zipTools.IncludeExtensions.Contains(".one"))
+                            {
+                                var dialogResult = MessageBox.Show(Properties.Resources.SuspiciousAttachmentZip_one + Environment.NewLine + Environment.NewLine + Properties.Resources.OpenAttachmentWarning1 + Environment.NewLine + Environment.NewLine + attachment.FileName, Properties.Resources.OpenAttachmentWarning1, MessageBoxButton.YesNo, MessageBoxImage.Error);
+                                if (dialogResult != MessageBoxResult.Yes)
+                                {
+                                    cancel = true;
+                                    return;
+                                }
+                            }
+                        }
+
+                        // Cảnh báo nếu có tệp Office hỗ trợ macro trong file Zip
+                        if (_securityForReceivedMail.IsWarnOfficeFileWithMacroInTheZip)
+                        {
+                            if (zipTools.IncludeExtensions.Contains(".docm") | zipTools.IncludeExtensions.Contains(".xlsm") | zipTools.IncludeExtensions.Contains(".pptm"))
+                            {
+                                var dialogResult = MessageBox.Show(Properties.Resources.SuspiciousAttachmentZip_macro + Environment.NewLine + Environment.NewLine + Properties.Resources.OpenAttachmentWarning1 + Environment.NewLine + Environment.NewLine + attachment.FileName, Properties.Resources.OpenAttachmentWarning1, MessageBoxButton.YesNo, MessageBoxImage.Error);
+                                if (dialogResult != MessageBoxResult.Yes)
+                                {
+                                    cancel = true;
+                                    return;
+                                }
+                            }
+                        }
+                    }
+
+                    // Cảnh báo nếu tệp Office có chứa macro
+                    if (_securityForReceivedMail.IsWarnBeforeOpeningAttachmentsThatContainMacros)
+                    {
+                        if (OfficeFileHandler.CheckOfficeFileHasVbProject(tempFilePath, Path.GetExtension(attachment.FileName).ToLower()))
+                        {
+                            var dialogResult = MessageBox.Show(Properties.Resources.SuspiciousAttachment_macro + Environment.NewLine + Properties.Resources.OpenAttachmentWarning1 + Environment.NewLine + Environment.NewLine + attachment.FileName, Properties.Resources.OpenAttachmentWarning1, MessageBoxButton.YesNo, MessageBoxImage.Exclamation);
+                            if (dialogResult != MessageBoxResult.Yes)
+                            {
+                                cancel = true;
+                                return;
+                            }
+                        }
+                    }
                 }
-                catch (Exception ex)
+                finally
                 {
-                    // Log temp file cleanup error
-                    System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Failed to delete temp file (Cleanup): {ex.Message}");
+                    try
+                    {
+                        if (File.Exists(tempFilePath))
+                        {
+                            File.Delete(tempFilePath);
+                        }
+                        if (Directory.Exists(tempDirectoryPath))
+                        {
+                            Directory.Delete(tempDirectoryPath, true);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log temp file cleanup error
+                        System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Failed to delete temp directory: {ex.Message}");
+                    }
                 }
             }
         }
@@ -803,6 +758,9 @@ namespace OutlookOkan
             // - Nếu có lỗi nghiêm trọng: hỏi user có muốn gửi không
             // - Tránh trường hợp add-in lỗi làm user không gửi được email
             var type = typeof(Outlook.MailItem);
+            Outlook.Explorer explorer = null;
+            Outlook.NameSpace session = null;
+            Outlook.MAPIFolder contacts = null;
             try
             {
                 // ---------------------------------------------------------
@@ -834,13 +792,19 @@ namespace OutlookOkan
                 // ---------------------------------------------------------
                 // Chỉ lấy danh bạ nếu có bật tính năng liên quan
                 // (để tránh truy cập không cần thiết)
-                Outlook.MAPIFolder contacts = null;
                 if (_generalSetting.IsAutoCheckRegisteredInContacts
                     || _generalSetting.IsWarningIfRecipientsIsNotRegistered
                     || _generalSetting.IsProhibitsSendingMailIfRecipientsIsNotRegistered)
                 {
-                    contacts = Application.ActiveExplorer().Session
-                        .GetDefaultFolder(Outlook.OlDefaultFolders.olFolderContacts);
+                    explorer = Application.ActiveExplorer();
+                    if (explorer != null)
+                    {
+                        session = explorer.Session;
+                        if (session != null)
+                        {
+                            contacts = session.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderContacts);
+                        }
+                    }
                 }
 
                 // ---------------------------------------------------------
@@ -1041,6 +1005,12 @@ namespace OutlookOkan
                 {
                     cancel = true;
                 }
+            }
+            finally
+            {
+                SafeReleaseCom(contacts);
+                SafeReleaseCom(session);
+                SafeReleaseCom(explorer);
             }
         }
 
@@ -1257,24 +1227,42 @@ namespace OutlookOkan
         /// <returns>True nếu phát hiện tệp đính kèm dạng liên kết, False nếu không</returns>
         private bool HasLinkAttachments(object item)
         {
+            Outlook.Attachments attachments = null;
             try
             {
                 var mailItem = item as Outlook.MailItem;
-                if (mailItem?.Attachments == null || mailItem.Attachments.Count == 0)
+                if (mailItem == null)
+                    return false;
+
+                attachments = mailItem.Attachments;
+                if (attachments == null)
+                    return false;
+
+                int count = attachments.Count;
+                if (count == 0)
                     return false;
 
                 // [OPTIMIZATION-TASK4] Kiểm tra tệp đính kèm dạng liên kết
                 // Tệp đính kèm dạng liên kết có: OlAttachmentType.olByReference
                 // HOẶC: tên tệp chứa "://" (URL)
-                foreach (Outlook.Attachment att in mailItem.Attachments)
+                for (int i = 1; i <= count; i++)
                 {
-                    // Kiểm tra loại: olByReference chỉ tệp đính kèm dạng liên kết
-                    if (att.Type == Outlook.OlAttachmentType.olByReference)
-                        return true;
+                    Outlook.Attachment att = null;
+                    try
+                    {
+                        att = attachments[i];
+                        // Kiểm tra loại: olByReference chỉ tệp đính kèm dạng liên kết
+                        if (att.Type == Outlook.OlAttachmentType.olByReference)
+                            return true;
 
-                    // Kiểm tra tên tệp: URL trong tên chỉ tệp đính kèm dạng liên kết
-                    if (att.FileName?.Contains("://") ?? false)
-                        return true;
+                        // Kiểm tra tên tệp: URL trong tên chỉ tệp đính kèm dạng liên kết
+                        if (att.FileName?.Contains("://") == true)
+                            return true;
+                    }
+                    finally
+                    {
+                        SafeReleaseCom(att);
+                    }
                 }
 
                 return false;
@@ -1285,6 +1273,10 @@ namespace OutlookOkan
                 // Điều này đảm bảo hack chạy thay vì không cập nhật body
                 System.Diagnostics.Debug.WriteLine($"[OutlookOkan] HasLinkAttachments detection failed: {ex.Message}");
                 return true; // Safe default
+            }
+            finally
+            {
+                SafeReleaseCom(attachments);
             }
         }
 

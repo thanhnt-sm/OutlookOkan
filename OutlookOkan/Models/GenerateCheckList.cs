@@ -633,18 +633,26 @@ namespace OutlookOkan.Models
         /// <returns>Địa chỉ và tên người nhận</returns>
         private DisplayNameAndRecipient MakeDisplayNameAndRecipient(IEnumerable recipients, DisplayNameAndRecipient displayNameAndRecipient, GeneralSetting generalSetting, bool isMeetingItem)
         {
-            foreach (Outlook.Recipient recipient in recipients)
+            var enumerator = recipients.GetEnumerator();
+            try
             {
-                var recipientAddressEntryUserType = Outlook.OlAddressEntryUserType.olOtherAddressEntry;
-                try
+                while (enumerator.MoveNext())
                 {
-                    if (isMeetingItem)
-                    {
-                        if (!recipient.Sendable) continue;
-                    }
+                    Outlook.Recipient recipient = enumerator.Current as Outlook.Recipient;
+                    if (recipient == null) continue;
 
-                    recipientAddressEntryUserType = recipient.AddressEntry.AddressEntryUserType;
-                }
+                    try
+                    {
+                        var recipientAddressEntryUserType = Outlook.OlAddressEntryUserType.olOtherAddressEntry;
+                        try
+                        {
+                            if (isMeetingItem)
+                            {
+                                if (!recipient.Sendable) continue;
+                            }
+
+                            recipientAddressEntryUserType = recipient.AddressEntry.AddressEntryUserType;
+                        }
                 catch (Exception ex)
                 {
                     // Log error for debugging purposes
@@ -732,6 +740,18 @@ namespace OutlookOkan.Models
                             continue;
                     }
                 }
+                    }
+                    finally
+                    {
+                        if (recipient != null) Marshal.ReleaseComObject(recipient);
+                    }
+                }
+            }
+            finally
+            {
+                if (enumerator is IDisposable d) d.Dispose();
+                if (enumerator != null && Marshal.IsComObject(enumerator))
+                    Marshal.ReleaseComObject(enumerator);
             }
 
             return displayNameAndRecipient;
@@ -972,18 +992,30 @@ namespace OutlookOkan.Models
                 // [OPTIMIZATION] Use ComRetryHelper instead of manual retry with Thread.Sleep
                 ComRetryHelper.Execute(() =>
                 {
-                    foreach (Outlook.Recipient recipient in ((dynamic)item).Recipients)
+                    var recipients = ((dynamic)item).Recipients;
+                    int count = recipients.Count;
+                    for (int i = 1; i <= count; i++)
                     {
-                        switch (recipient.Type)
+                        Outlook.Recipient recipient = null;
+                        try
                         {
-                            case (int)Outlook.OlMailRecipientType.olBCC when recipient.Address.Equals(mailItemSender):
-                                addSenderToBcc = false;
-                                break;
-                            case (int)Outlook.OlMailRecipientType.olCC when recipient.Address.Equals(mailItemSender):
-                                addSenderToCc = false;
-                                break;
+                            recipient = recipients[i];
+                            switch (recipient.Type)
+                            {
+                                case (int)Outlook.OlMailRecipientType.olBCC when recipient.Address.Equals(mailItemSender):
+                                    addSenderToBcc = false;
+                                    break;
+                                case (int)Outlook.OlMailRecipientType.olCC when recipient.Address.Equals(mailItemSender):
+                                    addSenderToCc = false;
+                                    break;
+                            }
+                        }
+                        finally
+                        {
+                            if (recipient != null) Marshal.ReleaseComObject(recipient);
                         }
                     }
+                    Marshal.ReleaseComObject(recipients);
                 });
 
                 if (addSenderToCc || addSenderToCc)
@@ -1679,6 +1711,8 @@ namespace OutlookOkan.Models
                 checkList.IsCanNotSendMail = true;
                 checkList.CanNotSendMailMessage = Resources.ProhibitedWhenLargeNumberOfExternalDomainsAlert + $"[{settings.TargetToAndCcExternalDomainsNum}]";
 
+
+
                 return checkList;
             }
 
@@ -1711,41 +1745,88 @@ namespace OutlookOkan.Models
 
             var targetMailAddressAndRecipient = new Dictionary<string, string>();
 
-            foreach (Outlook.Recipient recipient in ((dynamic)item).Recipients)
+            var recipients = ((dynamic)item).Recipients;
+            try
             {
-                foreach (var target in mailItemsRecipientAndMailAddress)
+                int count = recipients.Count;
+                for (int i = 1; i <= count; i++)
                 {
-                    if (recipient.Address == target.MailItemsRecipient) targetMailAddressAndRecipient[target.MailAddress] = target.MailItemsRecipient;
-                }
-            }
-
-            // Nếu sử dụng Index để xóa, Index sẽ bị lệch và không thể xóa chính xác nhiều mục, vì vậy hãy tìm đối tượng cần xóa và xóa nó.
-            var targetCount = targetMailAddressAndRecipient.Count;
-            while (targetCount > 0)
-            {
-                foreach (var target in targetMailAddressAndRecipient)
-                {
-                    foreach (Outlook.Recipient recipient in ((dynamic)item).Recipients)
+                    Outlook.Recipient recipient = null;
+                    try
                     {
-                        if (recipient.Address != target.Value) continue;
-                        ((dynamic)item).Recipients.Remove(recipient.Index);
-                        targetCount--;
+                        recipient = recipients[i];
+                        foreach (var target in mailItemsRecipientAndMailAddress)
+                        {
+                            if (recipient.Address == target.MailItemsRecipient) targetMailAddressAndRecipient[target.MailAddress] = target.MailItemsRecipient;
+                        }
+                    }
+                    finally
+                    {
+                        if (recipient != null) Marshal.ReleaseComObject(recipient);
                     }
                 }
-            }
 
-            foreach (var addTarget in targetMailAddressAndRecipient.Select(mailAddress => ((dynamic)item).Recipients.Add(mailAddress.Key)))
+                var targetCount = targetMailAddressAndRecipient.Count;
+                while (targetCount > 0)
+                {
+                    foreach (var target in targetMailAddressAndRecipient)
+                    {
+                        int currentCount = recipients.Count;
+                        for (int i = currentCount; i >= 1; i--)
+                        {
+                            Outlook.Recipient recipient = null;
+                            try
+                            {
+                                recipient = recipients[i];
+                                if (recipient.Address == target.Value)
+                                {
+                                    recipients.Remove(i);
+                                    targetCount--;
+                                    break;
+                                }
+                            }
+                            finally
+                            {
+                                if (recipient != null) Marshal.ReleaseComObject(recipient);
+                            }
+                        }
+                    }
+                }
+
+                foreach (var mailAddress in targetMailAddressAndRecipient)
+                {
+                    Outlook.Recipient addTarget = null;
+                    try
+                    {
+                        addTarget = recipients.Add(mailAddress.Key);
+                        addTarget.Type = (int)Outlook.OlMailRecipientType.olBCC;
+                    }
+                    finally
+                    {
+                        if (addTarget != null) Marshal.ReleaseComObject(addTarget);
+                    }
+                }
+
+                if (isNeedsAddToSender)
+                {
+                    Outlook.Recipient senderRecipient = null;
+                    try
+                    {
+                        senderRecipient = recipients.Add(senderMailAddress);
+                        senderRecipient.Type = (int)Outlook.OlMailRecipientType.olTo;
+                    }
+                    finally
+                    {
+                        if (senderRecipient != null) Marshal.ReleaseComObject(senderRecipient);
+                    }
+                }
+
+                _ = recipients.ResolveAll();
+            }
+            finally
             {
-                addTarget.Type = (int)Outlook.OlMailRecipientType.olBCC;
+                if (recipients != null) Marshal.ReleaseComObject(recipients);
             }
-
-            if (isNeedsAddToSender)
-            {
-                var senderRecipient = ((dynamic)item).Recipients.Add(senderMailAddress);
-                senderRecipient.Type = (int)Outlook.OlMailRecipientType.olTo;
-            }
-
-            _ = ((dynamic)item).Recipients.ResolveAll();
         }
 
         /// <summary>

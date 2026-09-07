@@ -95,19 +95,23 @@ namespace OutlookOkan.Helpers
                 // Batch expand with limit
                 int processedCount = 0;
                 bool truncated = false;
+                
+                int count = addressEntries.Count;
 
-                foreach (Outlook.AddressEntry member in addressEntries)
+                for (int i = 1; i <= count; i++)
                 {
                     if (processedCount >= MAX_MEMBERS_PER_DL)
                     {
                         truncated = true;
                         System.Diagnostics.Debug.WriteLine(
-                            $"[OutlookOkan] DL truncated: {distributionList.Name} has {addressEntries.Count} members, showing first {MAX_MEMBERS_PER_DL}");
+                            $"[OutlookOkan] DL truncated: {distributionList.Name} has {count} members, showing first {MAX_MEMBERS_PER_DL}");
                         break;
                     }
 
+                    Outlook.AddressEntry member = null;
                     try
                     {
+                        member = addressEntries[i];
                         var memberInfo = ExtractMemberInfo(member, distributionList.Name, currentDepth);
                         if (memberInfo != null)
                         {
@@ -117,9 +121,11 @@ namespace OutlookOkan.Helpers
                     }
                     catch (Exception ex)
                     {
-                        System.Diagnostics.Debug.WriteLine(
-                            $"[OutlookOkan] Error processing DL member: {ex.Message}");
-                        // Continue with next member instead of failing
+                        System.Diagnostics.Debug.WriteLine($"[OutlookOkan] Error processing member {i}: {ex.Message}");
+                    }
+                    finally
+                    {
+                        if (member != null) System.Runtime.InteropServices.Marshal.ReleaseComObject(member);
                     }
                 }
 
