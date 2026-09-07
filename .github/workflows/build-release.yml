@@ -1,4 +1,4 @@
-name: Build and Release OutlookOkan_thantn
+name: Build and Release OutlookOkan
 
 on:
   push:
@@ -10,15 +10,14 @@ on:
   pull_request:
     branches:
       - master
-  # ⭐ FLEXIBLE: Leave empty = Auto mode | Fill in = Manual mode
   workflow_dispatch:
     inputs:
       custom_tag:
-        description: '🏷️ Custom tag (leave empty = auto bump)'
+        description: 'Custom tag (leave empty = auto bump)'
         required: false
         default: ''
       custom_description:
-        description: '📝 Custom description (leave empty = auto from commits)'
+        description: 'Custom description (leave empty = auto from commits)'
         required: false
         default: ''
 
@@ -31,48 +30,36 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
-  # ============================================
-  # STAGE 1: Version & Changelog
-  # ============================================
   version:
-    name: 📊 Version
+    name: Version
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.final.outputs.version }}
       previous_tag: ${{ steps.auto.outputs.previous_tag }}
       changelog: ${{ steps.final.outputs.changelog }}
       is_manual: ${{ steps.check.outputs.is_manual }}
-      
+
     steps:
-    - name: 📥 Checkout
+    - name: Checkout
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
         token: ${{ secrets.GITHUB_TOKEN }}
-        
-    - name: 🔍 Check Mode
+
+    - name: Detect Mode
       id: check
       run: |
         CUSTOM_TAG="${{ github.event.inputs.custom_tag }}"
-        CUSTOM_DESC="${{ github.event.inputs.custom_description }}"
-        
         if [ -n "$CUSTOM_TAG" ]; then
           echo "is_manual=true" >> $GITHUB_OUTPUT
-          echo "### 🎯 Mode: MANUAL" >> $GITHUB_STEP_SUMMARY
-          echo "- Custom Tag: \`$CUSTOM_TAG\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Custom Description: ${CUSTOM_DESC:-'(none)'}" >> $GITHUB_STEP_SUMMARY
         else
           echo "is_manual=false" >> $GITHUB_OUTPUT
-          echo "### 🤖 Mode: AUTO" >> $GITHUB_STEP_SUMMARY
-          echo "- Tag: Auto bump" >> $GITHUB_STEP_SUMMARY
-          echo "- Description: Auto from commits" >> $GITHUB_STEP_SUMMARY
         fi
-        
-    # ======= AUTO MODE =======
-    - name: 🏷️ Auto Bump Tag
+
+    - name: Auto Bump Tag
       id: auto
       if: steps.check.outputs.is_manual != 'true'
-      uses: anothrNick/github-tag-action@v1
+      uses: anothrNick/github-tag-action@1.71.0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         WITH_V: true
@@ -80,289 +67,297 @@ jobs:
         RELEASE_BRANCHES: master
         DRY_RUN: false
         INITIAL_VERSION: 1.0.0
-        
-    - name: 📝 Auto Generate Changelog
+
+    - name: Auto Generate Changelog
       id: auto_changelog
       if: steps.check.outputs.is_manual != 'true'
       run: |
         PREVIOUS_TAG="${{ steps.auto.outputs.previous_tag }}"
-        
         if [ -z "$PREVIOUS_TAG" ]; then
           COMMITS=$(git log --pretty=format:"- %s (%h)" -n 50)
         else
           COMMITS=$(git log --pretty=format:"- %s (%h)" ${PREVIOUS_TAG}..HEAD)
         fi
-        
         FEATURES=$(echo "$COMMITS" | grep -iE "^- (feat|feature|add|new):" || true)
         FIXES=$(echo "$COMMITS" | grep -iE "^- (fix|bug|patch|resolve):" || true)
         IMPROVEMENTS=$(echo "$COMMITS" | grep -iE "^- (refactor|perf|improve|update|enhance):" || true)
         OTHER=$(echo "$COMMITS" | grep -ivE "^- (feat|feature|add|new|fix|bug|patch|resolve|refactor|perf|improve|update|enhance):" || true)
-        
         CHANGELOG=""
-        [ -n "$FEATURES" ] && CHANGELOG="${CHANGELOG}### ✨ New Features\n${FEATURES}\n\n"
-        [ -n "$FIXES" ] && CHANGELOG="${CHANGELOG}### 🐛 Bug Fixes\n${FIXES}\n\n"
-        [ -n "$IMPROVEMENTS" ] && CHANGELOG="${CHANGELOG}### ⚡ Improvements\n${IMPROVEMENTS}\n\n"
-        [ -n "$OTHER" ] && CHANGELOG="${CHANGELOG}### 🔧 Other Changes\n${OTHER}\n\n"
-        
-        [ -z "$CHANGELOG" ] && CHANGELOG="### 📝 Changes\n${COMMITS}\n"
-        
+        [ -n "$FEATURES" ] && CHANGELOG="${CHANGELOG}### New Features\n${FEATURES}\n\n"
+        [ -n "$FIXES" ] && CHANGELOG="${CHANGELOG}### Bug Fixes\n${FIXES}\n\n"
+        [ -n "$IMPROVEMENTS" ] && CHANGELOG="${CHANGELOG}### Improvements\n${IMPROVEMENTS}\n\n"
+        [ -n "$OTHER" ] && CHANGELOG="${CHANGELOG}### Other Changes\n${OTHER}\n\n"
+        [ -z "$CHANGELOG" ] && CHANGELOG="### Changes\n${COMMITS}\n"
         echo "changelog<<EOF" >> $GITHUB_OUTPUT
         echo -e "$CHANGELOG" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
-        
-    # ======= MANUAL MODE =======
-    - name: 🏷️ Create Manual Tag
+
+    - name: Create Manual Tag
       if: steps.check.outputs.is_manual == 'true'
       run: |
         CUSTOM_TAG="${{ github.event.inputs.custom_tag }}"
-        # Add 'v' prefix if not present
-        if [[ ! "$CUSTOM_TAG" =~ ^v ]]; then
-          CUSTOM_TAG="v${CUSTOM_TAG}"
-        fi
-        
+        [[ ! "$CUSTOM_TAG" =~ ^v ]] && CUSTOM_TAG="v${CUSTOM_TAG}"
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         git tag -a "$CUSTOM_TAG" -m "Release $CUSTOM_TAG"
         git push origin "$CUSTOM_TAG"
-        echo "✅ Created tag: $CUSTOM_TAG" >> $GITHUB_STEP_SUMMARY
-        
-    # ======= FINAL OUTPUT =======
-    - name: 📊 Set Final Outputs
+
+    - name: Set Final Outputs
       id: final
       run: |
         IS_MANUAL="${{ steps.check.outputs.is_manual }}"
-        
         if [ "$IS_MANUAL" == "true" ]; then
-          # MANUAL MODE
           CUSTOM_TAG="${{ github.event.inputs.custom_tag }}"
           [[ ! "$CUSTOM_TAG" =~ ^v ]] && CUSTOM_TAG="v${CUSTOM_TAG}"
-          
           echo "version=${CUSTOM_TAG}" >> $GITHUB_OUTPUT
-          
           CUSTOM_DESC="${{ github.event.inputs.custom_description }}"
           if [ -n "$CUSTOM_DESC" ]; then
             echo "changelog<<EOF" >> $GITHUB_OUTPUT
-            echo "### 📝 Release Notes" >> $GITHUB_OUTPUT
-            echo "" >> $GITHUB_OUTPUT
             echo "$CUSTOM_DESC" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
           else
             echo "changelog=Manual release" >> $GITHUB_OUTPUT
           fi
         else
-          # AUTO MODE
           echo "version=${{ steps.auto.outputs.new_tag }}" >> $GITHUB_OUTPUT
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
           echo "${{ steps.auto_changelog.outputs.changelog }}" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
         fi
-        
-    - name: 📋 Summary
-      run: |
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 📊 Final Version: \`${{ steps.final.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
 
-  # ============================================
-  # STAGE 2: Build
-  # ============================================
+    - name: Version Summary
+      run: echo "### Final Version ${{ steps.final.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+
   build:
-    name: 🔨 Build
+    name: Build
     runs-on: windows-latest
     needs: version
-    
+    env:
+      PUBLISH_DIR: ${{ github.workspace }}\OutlookOkan\app.publish
+      MSBUILD_LOG: ${{ github.workspace }}\msbuild.log
+      PFX_PATH: ${{ github.workspace }}\OutlookOkan\OutlookOkan_CI.pfx
+      CSPROJ_PATH: ${{ github.workspace }}\OutlookOkan\OutlookOkan.csproj
+
     steps:
-    - name: 📥 Checkout
+    - name: Checkout
       uses: actions/checkout@v4
 
-    - name: 🔧 Setup MSBuild
+    - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v2
 
-    - name: 📦 Setup NuGet
+    - name: Setup NuGet
       uses: NuGet/setup-nuget@v2
 
-    - name: 📥 Restore Packages
-      run: nuget restore OutlookOkan.sln
+    - name: Restore NuGet Packages
       shell: pwsh
+      run: nuget restore OutlookOkan.sln
 
-    - name: 🔄 Stamp Version
+    - name: Stamp Assembly Version
       shell: pwsh
       run: |
         $version = "${{ needs.version.outputs.version }}".TrimStart('v')
         $parts = $version -split '\.'
-        if ($parts.Count -ge 3) {
-            $asmVersion = "$($parts[0]).$($parts[1]).$($parts[2]).0"
-        } else {
-            $asmVersion = "1.0.0.0"
-        }
-        
-        $path = "OutlookOkan/Properties/AssemblyInfo.cs"
+        $asmVersion = if ($parts.Count -ge 3) { "$($parts[0]).$($parts[1]).$($parts[2]).0" } else { "1.0.0.0" }
+        $path = "OutlookOkan\Properties\AssemblyInfo.cs"
         if (Test-Path $path) {
           $content = Get-Content $path -Raw
           $content = $content -replace 'AssemblyVersion\("[^"]*"\)', "AssemblyVersion(`"$asmVersion`")"
           $content = $content -replace 'AssemblyFileVersion\("[^"]*"\)', "AssemblyFileVersion(`"$asmVersion`")"
           Set-Content $path $content
           Write-Host "Stamped version: $asmVersion"
+        } else {
+          Write-Warning "AssemblyInfo.cs not found, skipping stamp."
         }
 
-    - name: 🔐 Check and Import Certificate
+    - name: Validate or Regenerate CI Certificate
       shell: pwsh
       run: |
-        $pfx = "${{ github.workspace }}\OutlookOkan\OutlookOkan_CI.pfx"
+        $pfx = "$env:PFX_PATH"
         $pwd = ConvertTo-SecureString "123456" -AsPlainText -Force
-        
         $valid = $false
         if (Test-Path $pfx) {
-            try {
-                $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($pfx, "123456")
-                if ($cert.NotAfter -gt (Get-Date)) {
-                    $valid = $true
-                    Write-Host "Existing PFX is valid, expires: $($cert.NotAfter)"
-                } else {
-                    Write-Host "Existing PFX is expired."
-                }
-            } catch {
-                Write-Host "Existing PFX is invalid or password doesn't match: $_"
+          try {
+            $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($pfx, "123456")
+            if ($cert.NotAfter -gt (Get-Date)) {
+              $valid = $true
+              Write-Host "PFX valid until $($cert.NotAfter)"
+            } else {
+              Write-Warning "PFX expired ($($cert.NotAfter)), regenerating..."
             }
+          } catch {
+            Write-Warning "PFX invalid: $($_.Exception.Message)"
+          }
         } else {
-            Write-Host "PFX file not found."
+          Write-Host "PFX not found, generating new one."
         }
-        
         if (-not $valid) {
-            Write-Host "Generating a new self-signed certificate for CI..."
-            $newCert = New-SelfSignedCertificate -Subject "CN=OutlookOkan_CI" -CertStoreLocation "Cert:\CurrentUser\My" -Type CodeSigningCert
-            Export-PfxCertificate -Cert $newCert -FilePath $pfx -Password $pwd | Out-Null
-            Write-Host "Generated new PFX certificate."
-        }
-        
-        $certObj = Import-PfxCertificate -FilePath $pfx -CertStoreLocation "Cert:\CurrentUser\My" -Password $pwd
-        try {
-            Import-PfxCertificate -FilePath $pfx -CertStoreLocation "Cert:\LocalMachine\Root" -Password $pwd | Out-Null
-        } catch {
-            Write-Host "Warning: Could not install to LocalMachine\Root (may need admin). Continuing..."
-        }
-        
-        $thumbprint = $certObj.Thumbprint
-        Write-Host "Certificate Thumbprint: $thumbprint"
-        
-        $csprojPath = "${{ github.workspace }}\OutlookOkan\OutlookOkan.csproj"
-        if (Test-Path $csprojPath) {
-            $csprojContent = Get-Content $csprojPath -Raw
-            $csprojContent = $csprojContent -replace '<ManifestCertificateThumbprint>[^<]*</ManifestCertificateThumbprint>', "<ManifestCertificateThumbprint>$thumbprint</ManifestCertificateThumbprint>"
-            Set-Content $csprojPath $csprojContent
-            Write-Host "Updated ManifestCertificateThumbprint in csproj."
+          $newCert = New-SelfSignedCertificate -Subject "CN=OutlookOkan_CI" -CertStoreLocation "Cert:\CurrentUser\My" -Type CodeSigningCert
+          Export-PfxCertificate -Cert $newCert -FilePath $pfx -Password $pwd | Out-Null
+          Write-Host "New PFX generated."
         }
 
-    - name: 🔧 Install VSTO Hosting DLL to GAC
-      shell: powershell
-      run: |
-        $searchPaths = @(
-            "C:\Program Files\Microsoft Visual Studio",
-            "C:\Program Files (x86)\Microsoft Visual Studio",
-            "C:\Program Files\Common Files\Microsoft Shared\VSTO",
-            "C:\Program Files (x86)\Common Files\Microsoft Shared\VSTO"
-        )
-        $dllName = "Microsoft.VisualStudio.Tools.Applications.Hosting.dll"
-        $found = $null
-        
-        foreach ($basePath in $searchPaths) {
-            if (Test-Path $basePath) {
-                $dlls = Get-ChildItem -Path $basePath -Filter $dllName -Recurse -ErrorAction SilentlyContinue
-                if ($dlls.Count -gt 0) {
-                    $found = $dlls[0].FullName
-                    break
-                }
-            }
-        }
-        
-        if ($found) {
-            Write-Host "Found DLL at: $found"
-            Add-Type -AssemblyName System.EnterpriseServices
-            $publish = New-Object System.EnterpriseServices.Internal.Publish
-            $publish.GacInstall($found)
-            Write-Host "Installed to GAC successfully."
-        } else {
-            Write-Host "Warning: Could not find $dllName. Build may fail with VerifyClickOnceSigningSettings error."
-        }
-
-    - name: 🏗️ Build
+    - name: Import Certificate to Windows Certificate Store
       shell: pwsh
       run: |
-        msbuild OutlookOkan/OutlookOkan.csproj `
+        $pfx = "$env:PFX_PATH"
+        $pwd = ConvertTo-SecureString "123456" -AsPlainText -Force
+        $certObj = Import-PfxCertificate -FilePath $pfx -CertStoreLocation "Cert:\CurrentUser\My" -Password $pwd
+        Write-Host "Imported to CurrentUser\My. Thumbprint: $($certObj.Thumbprint)"
+        try {
+          Import-PfxCertificate -FilePath $pfx -CertStoreLocation "Cert:\LocalMachine\Root" -Password $pwd | Out-Null
+          Write-Host "Imported to LocalMachine\Root."
+        } catch {
+          Write-Warning "Could not import to LocalMachine\Root (may need admin): $($_.Exception.Message)"
+        }
+
+    - name: Sync Certificate Thumbprint to csproj
+      shell: pwsh
+      run: |
+        $pfx = "$env:PFX_PATH"
+        $pwd = ConvertTo-SecureString "123456" -AsPlainText -Force
+        $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($pfx, "123456")
+        $thumbprint = $cert.Thumbprint
+        $csprojPath = "$env:CSPROJ_PATH"
+        if (Test-Path $csprojPath) {
+          $content = Get-Content $csprojPath -Raw
+          $content = $content -replace '<ManifestCertificateThumbprint>[^<]*</ManifestCertificateThumbprint>', "<ManifestCertificateThumbprint>$thumbprint</ManifestCertificateThumbprint>"
+          Set-Content $csprojPath $content
+          Write-Host "Updated ManifestCertificateThumbprint: $thumbprint"
+        } else {
+          Write-Warning "csproj not found: $csprojPath"
+        }
+
+    - name: Install VSTO Hosting DLL to GAC
+      shell: powershell
+      run: |
+        $dllName = "Microsoft.VisualStudio.Tools.Applications.Hosting.dll"
+        $searchPaths = @(
+          "C:\Program Files\Microsoft Visual Studio",
+          "C:\Program Files (x86)\Microsoft Visual Studio",
+          "C:\Program Files\Common Files\Microsoft Shared\VSTO",
+          "C:\Program Files (x86)\Common Files\Microsoft Shared\VSTO"
+        )
+        $found = $null
+        foreach ($basePath in $searchPaths) {
+          if (Test-Path $basePath) {
+            $dlls = Get-ChildItem -Path $basePath -Filter $dllName -Recurse -ErrorAction SilentlyContinue
+            if ($dlls.Count -gt 0) { $found = $dlls[0].FullName; break }
+          }
+        }
+        if ($found) {
+          Write-Host "Found: $found"
+          Add-Type -AssemblyName System.EnterpriseServices
+          $publish = New-Object System.EnterpriseServices.Internal.Publish
+          $publish.GacInstall($found)
+          Write-Host "Installed to GAC."
+        } else {
+          Write-Warning "Could not find $dllName"
+        }
+
+    - name: MSBuild Publish
+      shell: pwsh
+      run: |
+        msbuild "$env:CSPROJ_PATH" `
           /t:Publish `
           /p:Configuration=Release `
           /p:Platform=AnyCPU `
-          /p:PublishDir=app.publish/ `
+          /p:PublishDir="$env:PUBLISH_DIR\" `
           /p:ManifestTimestampUrl="" `
           /p:SignManifests=false `
-          /fl "/flp:logfile=${{ github.workspace }}\msbuild.log;verbosity=normal"
+          /p:GenerateBootstrapper=false `
+          /fl "/flp:logfile=$env:MSBUILD_LOG;verbosity=normal"
 
-    - name: 📦 Upload Artifacts
+    - name: Verify Build Output
+      shell: pwsh
+      run: |
+        $publishDir = "$env:PUBLISH_DIR"
+        if (-not (Test-Path $publishDir)) {
+          Write-Error "Publish directory not found: $publishDir"
+          exit 1
+        }
+        $files = Get-ChildItem -Path $publishDir -Recurse
+        if ($files.Count -eq 0) {
+          Write-Error "Publish directory is empty!"
+          exit 1
+        }
+        Write-Host "Build output OK - $($files.Count) files"
+
+    - name: Upload Build Artifact
       uses: actions/upload-artifact@v4
       with:
         name: OutlookOkan-${{ needs.version.outputs.version }}
-        path: OutlookOkan/app.publish/**
+        path: ${{ env.PUBLISH_DIR }}\**
+        if-no-files-found: error
         retention-days: 30
 
-    - name: 📋 Upload Build Log
+    - name: Upload Build Log
       if: always()
       uses: actions/upload-artifact@v4
       with:
         name: build-log
-        path: ${{ github.workspace }}\msbuild.log
+        path: ${{ env.MSBUILD_LOG }}
         if-no-files-found: ignore
         retention-days: 7
 
-  # ============================================
-  # STAGE 3: Release
-  # ============================================
   release:
-    name: 🚀 Release
+    name: Release
     runs-on: ubuntu-latest
     needs: [version, build]
+    if: github.event_name != 'pull_request'
     permissions:
       contents: write
-      
+
     steps:
-    - name: 📥 Download Artifacts
+    - name: Download Build Artifact
       uses: actions/download-artifact@v4
       with:
         name: OutlookOkan-${{ needs.version.outputs.version }}
         path: installer
-        
-    - name: 📦 Package
+
+    - name: Verify Installer Files
+      run: |
+        if [ -z "$(ls -A installer)" ]; then
+          echo "Installer directory is empty!" && exit 1
+        fi
+        echo "Installer files:"
+        ls -la installer/
+
+    - name: Create Release ZIP and Checksum
       run: |
         VERSION="${{ needs.version.outputs.version }}"
-        cd installer && zip -r ../OutlookOkan_${VERSION}_Installer.zip . && cd ..
-        sha256sum OutlookOkan_${VERSION}_Installer.zip > CHECKSUMS.sha256
-        
-    - name: 🚀 Create Release
+        ZIP_NAME="OutlookOkan_${VERSION}_Installer.zip"
+        cd installer && zip -r ../${ZIP_NAME} . && cd ..
+        sha256sum ${ZIP_NAME} > CHECKSUMS.sha256
+        echo "Created: ${ZIP_NAME}"
+
+    - name: Publish GitHub Release
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ needs.version.outputs.version }}
-        name: 🎉 OutlookOkan ${{ needs.version.outputs.version }}
+        name: OutlookOkan ${{ needs.version.outputs.version }}
         body: |
-          ## 📋 What's Changed
-          
+          ## What's Changed
+
           ${{ needs.version.outputs.changelog }}
-          
+
           ---
-          
-          ## 📦 Installation
-          
+
+          ## Installation
+
           1. Download `OutlookOkan_${{ needs.version.outputs.version }}_Installer.zip`
           2. Extract and run `setup.exe`
           3. Restart Microsoft Outlook
-          
+
           ---
-          
-          📊 **Compare:** [${{ needs.version.outputs.previous_tag }}...${{ needs.version.outputs.version }}](https://github.com/${{ github.repository }}/compare/${{ needs.version.outputs.previous_tag }}...${{ needs.version.outputs.version }})
+
+          **Compare:** [${{ needs.version.outputs.previous_tag }}...${{ needs.version.outputs.version }}](https://github.com/${{ github.repository }}/compare/${{ needs.version.outputs.previous_tag }}...${{ needs.version.outputs.version }})
         files: |
           OutlookOkan_${{ needs.version.outputs.version }}_Installer.zip
           CHECKSUMS.sha256
         draft: false
         prerelease: false
-        
-    - name: 🎉 Summary
+
+    - name: Release Summary
       run: |
-        echo "### 🎉 Released: ${{ needs.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+        echo "### Released ${{ needs.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
         echo "[View Release](https://github.com/${{ github.repository }}/releases/tag/${{ needs.version.outputs.version }})" >> $GITHUB_STEP_SUMMARY
