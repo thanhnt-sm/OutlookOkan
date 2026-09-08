@@ -270,32 +270,53 @@ jobs:
           exit 1
         }
 
-    - name: Install VSTO Hosting DLL to GAC
+    - name: Install All VSTO Runtime DLLs to GAC
       shell: powershell
-      # NOTE: VSTO OfficeTools.targets REQUIRES SignManifests=true AND this DLL in GAC.
-      # Without this step the VerifyClickOnceSigningSettings task will fail at runtime.
+      # OfficeTools.targets calls multiple tasks (VerifyClickOnceSigningSettings,
+      # RegisterFormRegions, etc.) each requiring different VSTO Runtime DLLs in GAC.
+      # Bulk-install ALL matching DLLs at once to avoid whack-a-mole errors.
       run: |
-        $dllName = "Microsoft.VisualStudio.Tools.Applications.Hosting.dll"
-        $found = $null
-        $paths = @(
+        $searchPaths = @(
           "C:\Program Files\Microsoft Visual Studio",
           "C:\Program Files (x86)\Microsoft Visual Studio",
           "C:\Program Files\Common Files\Microsoft Shared\VSTO",
-          "C:\Program Files (x86)\Common Files\Microsoft Shared\VSTO"
+          "C:\Program Files (x86)\Common Files\Microsoft Shared\VSTO",
+          "C:\Program Files\Microsoft Visual Studio Tools for Office",
+          "C:\Program Files (x86)\Microsoft Visual Studio Tools for Office"
         )
-        foreach ($p in $paths) {
-          if (Test-Path $p) {
-            $dlls = Get-ChildItem -Path $p -Filter $dllName -Recurse -ErrorAction SilentlyContinue
-            if ($dlls.Count -gt 0) { $found = $dlls[0].FullName; break }
+        $patterns = @(
+          "Microsoft.VisualStudio.Tools.Applications.Hosting.dll",
+          "Microsoft.VisualStudio.Tools.Applications.Runtime.dll",
+          "Microsoft.VisualStudio.Tools.Office.Runtime.dll",
+          "Microsoft.VisualStudio.Tools.Applications.ServerDocument.dll",
+          "Microsoft.VisualStudio.Tools.Applications.ActionsPane.dll"
+        )
+
+        Add-Type -AssemblyName System.EnterpriseServices
+        $gac = New-Object System.EnterpriseServices.Internal.Publish
+        $installed = 0
+        $notFound = @()
+
+        foreach ($pattern in $patterns) {
+          $found = $null
+          foreach ($basePath in $searchPaths) {
+            if (Test-Path $basePath) {
+              $dlls = Get-ChildItem -Path $basePath -Filter $pattern -Recurse -ErrorAction SilentlyContinue
+              if ($dlls.Count -gt 0) { $found = $dlls[0].FullName; break }
+            }
+          }
+          if ($found) {
+            Write-Host "GAC install: $found"
+            $gac.GacInstall($found)
+            $installed++
+          } else {
+            $notFound += $pattern
           }
         }
-        if ($found) {
-          Write-Host "Installing to GAC: $found"
-          Add-Type -AssemblyName System.EnterpriseServices
-          (New-Object System.EnterpriseServices.Internal.Publish).GacInstall($found)
-          Write-Host "GAC install OK."
-        } else {
-          Write-Warning "Could not find $dllName - VerifyClickOnceSigningSettings may fail."
+
+        Write-Host "Installed $installed DLL(s) to GAC."
+        if ($notFound.Count -gt 0) {
+          Write-Warning "Not found (may cause build errors): $($notFound -join ', ')"
         }
 
     - name: MSBuild Publish
