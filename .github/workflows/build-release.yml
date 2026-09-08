@@ -244,7 +244,7 @@ jobs:
         msbuild "$env:SLN_PATH" `
           /t:Rebuild `
           /p:Configuration=Release `
-          /p:Platform=AnyCPU `
+          /p:Platform="Any CPU" `
           /fl "/flp:logfile=$env:MSBUILD_LOG;verbosity=normal"
 
     - name: Verify Build Output
