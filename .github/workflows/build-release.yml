@@ -218,10 +218,9 @@ jobs:
     runs-on: windows-latest
     needs: [version, prepare]
     env:
-      WORKSPACE: ${{ github.workspace }}
-      PFX_PATH: ${{ github.workspace }}\OutlookOkan\OutlookOkan_CI.pfx
       CSPROJ_PATH: ${{ github.workspace }}\OutlookOkan\OutlookOkan.csproj
-      PUBLISH_DIR: ${{ github.workspace }}\OutlookOkan\app.publish
+      SLN_PATH: ${{ github.workspace }}\OutlookOkan.sln
+      OUTPUT_DIR: ${{ github.workspace }}\OutlookOkan\bin\Release
       MSBUILD_LOG: ${{ github.workspace }}\msbuild.log
 
     steps:
@@ -234,126 +233,36 @@ jobs:
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v2
 
-    - name: Import Certificate to Windows Certificate Store
+    - name: MSBuild Rebuild
       shell: pwsh
+      # Use /t:Rebuild (same as local build.ps1) — avoids VSTO Publish pipeline
+      # which requires VSTO Runtime 10.0 (not present on CI runners).
+      # Output: OutlookOkan\bin\Release\OutlookOkan.dll + dependencies
       run: |
-        $pfx = "$env:PFX_PATH"
-        $pwd = ConvertTo-SecureString "123456" -AsPlainText -Force
-        if (-not (Test-Path $pfx)) {
-          Write-Error "PFX not found at: $pfx"
-          exit 1
-        }
-        $certObj = Import-PfxCertificate -FilePath $pfx -CertStoreLocation "Cert:\CurrentUser\My" -Password $pwd
-        Write-Host "Imported to CurrentUser\My. Thumbprint: $($certObj.Thumbprint)"
-        try {
-          Import-PfxCertificate -FilePath $pfx -CertStoreLocation "Cert:\LocalMachine\Root" -Password $pwd | Out-Null
-          Write-Host "Imported to LocalMachine\Root."
-        } catch {
-          Write-Warning "LocalMachine\Root import skipped (not critical): $($_.Exception.Message)"
-        }
-
-    - name: Sync Certificate Thumbprint to csproj
-      shell: pwsh
-      run: |
-        $pfx = "$env:PFX_PATH"
-        $pwd = ConvertTo-SecureString "123456" -AsPlainText -Force
-        $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($pfx, "123456")
-        $thumb = $cert.Thumbprint
-        $csproj = "$env:CSPROJ_PATH"
-        if (Test-Path $csproj) {
-          $c = Get-Content $csproj -Raw
-          $c = $c -replace '<ManifestCertificateThumbprint>[^<]*</ManifestCertificateThumbprint>', "<ManifestCertificateThumbprint>$thumb</ManifestCertificateThumbprint>"
-          Set-Content $csproj $c
-          Write-Host "Updated thumbprint in csproj: $thumb"
-        } else {
-          Write-Error "csproj not found: $csproj"
-          exit 1
-        }
-
-    - name: Install All VSTO Runtime DLLs to GAC
-      shell: powershell
-      # OfficeTools.targets calls multiple tasks (VerifyClickOnceSigningSettings,
-      # RegisterFormRegions, etc.) each requiring different VSTO Runtime DLLs in GAC.
-      # Bulk-install ALL matching DLLs at once to avoid whack-a-mole errors.
-      run: |
-        $searchPaths = @(
-          "C:\Program Files\Microsoft Visual Studio",
-          "C:\Program Files (x86)\Microsoft Visual Studio",
-          "C:\Program Files\Common Files\Microsoft Shared\VSTO",
-          "C:\Program Files (x86)\Common Files\Microsoft Shared\VSTO",
-          "C:\Program Files\Microsoft Visual Studio Tools for Office",
-          "C:\Program Files (x86)\Microsoft Visual Studio Tools for Office"
-        )
-        $patterns = @(
-          "Microsoft.VisualStudio.Tools.Applications.Hosting.dll",
-          "Microsoft.VisualStudio.Tools.Applications.Runtime.dll",
-          "Microsoft.VisualStudio.Tools.Office.Runtime.dll",
-          "Microsoft.VisualStudio.Tools.Applications.ServerDocument.dll",
-          "Microsoft.VisualStudio.Tools.Applications.ActionsPane.dll"
-        )
-
-        Add-Type -AssemblyName System.EnterpriseServices
-        $gac = New-Object System.EnterpriseServices.Internal.Publish
-        $installed = 0
-        $notFound = @()
-
-        foreach ($pattern in $patterns) {
-          $found = $null
-          foreach ($basePath in $searchPaths) {
-            if (Test-Path $basePath) {
-              $dlls = Get-ChildItem -Path $basePath -Filter $pattern -Recurse -ErrorAction SilentlyContinue
-              if ($dlls.Count -gt 0) { $found = $dlls[0].FullName; break }
-            }
-          }
-          if ($found) {
-            Write-Host "GAC install: $found"
-            $gac.GacInstall($found)
-            $installed++
-          } else {
-            $notFound += $pattern
-          }
-        }
-
-        Write-Host "Installed $installed DLL(s) to GAC."
-        if ($notFound.Count -gt 0) {
-          Write-Warning "Not found (may cause build errors): $($notFound -join ', ')"
-        }
-
-    - name: MSBuild Publish
-      shell: pwsh
-      # SignManifests=true is REQUIRED by VSTO OfficeTools.targets (cannot be false)
-      # The cert must already be in CurrentUser\My with matching thumbprint in csproj
-      run: |
-        Write-Host "Building: $env:CSPROJ_PATH"
-        Write-Host "Output:   $env:PUBLISH_DIR"
-        msbuild "$env:CSPROJ_PATH" `
-          /t:Publish `
+        Write-Host "Solution: $env:SLN_PATH"
+        Write-Host "Output:   $env:OUTPUT_DIR"
+        msbuild "$env:SLN_PATH" `
+          /t:Rebuild `
           /p:Configuration=Release `
           /p:Platform=AnyCPU `
-          /p:PublishDir="$env:PUBLISH_DIR\" `
-          /p:ManifestTimestampUrl="" `
-          /p:SignManifests=true `
-          /p:GenerateBootstrapper=false `
           /fl "/flp:logfile=$env:MSBUILD_LOG;verbosity=normal"
 
     - name: Verify Build Output
       shell: pwsh
       run: |
-        $dir = "$env:PUBLISH_DIR"
-        if (-not (Test-Path $dir)) {
-          Write-Error "Publish dir not found: $dir"; exit 1
+        $dll = "$env:OUTPUT_DIR\OutlookOkan.dll"
+        if (-not (Test-Path $dll)) {
+          Write-Error "OutlookOkan.dll not found at: $dll"; exit 1
         }
-        $files = Get-ChildItem -Path $dir -Recurse
-        if ($files.Count -eq 0) {
-          Write-Error "Publish dir is empty!"; exit 1
-        }
-        Write-Host "Build OK — $($files.Count) files in output"
+        $files = Get-ChildItem -Path "$env:OUTPUT_DIR" -Recurse
+        Write-Host "Build OK - $($files.Count) files in $env:OUTPUT_DIR"
+        $files | Select-Object Name | Format-Table -AutoSize
 
     - name: Upload Build Output
       uses: actions/upload-artifact@v4
       with:
         name: build-output-${{ needs.version.outputs.version }}
-        path: ${{ env.PUBLISH_DIR }}\**
+        path: ${{ env.OUTPUT_DIR }}\**
         if-no-files-found: error
         retention-days: 7
 
